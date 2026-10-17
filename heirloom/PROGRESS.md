@@ -48,6 +48,13 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 - Impact checks search with a lower BM25 floor (0.3) and relative cutoff (0.1) for recall, so newly added sources can't push relevant ones out (regression test included); the LLM/mock decides relevance.
 - MCP transport launches one stdio subprocess per call (~0.6 s each); fine for a demo, not tuned.
 
+## Verification (last run)
+
+- Backend: 62 pytest tests pass offline (`HEIRLOOM_OFFLINE=1`), including the fabricated-quote test.
+- Web: `tsc --noEmit` and `next build` pass.
+- Browser: scripted Chrome runs of M4, M5, M6, M7 flows and the full §15 walkthrough (17/17 beats) pass, also after a fresh `scripts/dev.sh --reset`.
+- The browser scripts live outside the repo (session scratchpad), not committed.
+
 ## Next
 
 All milestones built. Remaining: deploy (needs accounts), and a first run against live services once keys exist.
