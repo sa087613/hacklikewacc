@@ -10,7 +10,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | 1 | Foundation | Done (commit 6eaf764) |
 | 2 | Single-agent answers | Done: Ask page, §7 answer card, source side panel at exact passage, trace panel, citation verifier + fabricated-quote tests |
 | 3 | Agent-to-agent | Done: MCP servers per team (verified end to end with `AGENT_TRANSPORT=mcp`), hop/loop rules, share policy + withheld notices, Network screen with live edges, edge → exchange panel, audit log |
-| 4 | Learning loop | Backend done |
+| 4 | Learning loop | Done: route to expert (caps, dedupe, escalation), Inbox with typed or voice-note answers (offline: transcript + demo samples; live: MediaRecorder → Whisper), structured draft, PR review (share level, expiry, approve/edit/reject), asker notified, instant re-answer. Browser E2E passes. |
 | 7 | Insights | Backend done |
 | 6 | Bus factor map + exit interview | Backend done |
 | 5 | Trust features | Backend done |
@@ -48,4 +48,4 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 
 ## Next
 
-M4 frontend: Inbox (questions for me with text/voice-transcript answers, knowledge PR review with edit/approve/reject).
+M7 frontend: Insights (standup run button, insight cards with evidence + useful/not relevant/thread, impact check form + per-team cards).

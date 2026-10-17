@@ -53,7 +53,10 @@ export function TracePanel({ card, steps }: { card: AnswerCard | null; steps: Tr
           <section>
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Citation check</h3>
             <p className="text-sm">
-              {card.points.reduce((n, p) => n + p.citations.length, 0)} quotes verified verbatim
+              {(() => {
+                const n = card.points.reduce((acc, p) => acc + p.citations.length, 0);
+                return `${n} quote${n === 1 ? "" : "s"} verified verbatim`;
+              })()}
               {card.verification.dropped_citations > 0 && `, ${card.verification.dropped_citations} removed`}
             </p>
           </section>

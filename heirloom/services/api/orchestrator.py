@@ -96,10 +96,11 @@ def build_card(conn, draft: Dict, evidence: List[Dict], withheld: List[Dict], co
     allowed_ids = {e["source_id"] for e in evidence}
     points, report = citations.verify_points(conn, draft.get("points", []), allowed_ids)
     if trace and (report["dropped_citations"] or report["dropped_points"]):
-        trace.step("verify", f"Citation check dropped {len(report['dropped_citations'])} unverifiable quotes")
+        trace.step("verify", f"Citation check removed {len(report['dropped_citations'])} unverifiable quote"
+                   + ("" if len(report["dropped_citations"]) == 1 else "s"))
     elif trace:
         n = sum(len(p["citations"]) for p in points)
-        trace.step("verify", f"Verified {n} quotes against their sources")
+        trace.step("verify", f"Verified {n} quote{'' if n == 1 else 's'} against {'its source' if n == 1 else 'their sources'}")
 
     index = entries_for_sources(conn, [c["source_id"] for p in points for c in p["citations"]])
     source_numbers: Dict[str, int] = {}
