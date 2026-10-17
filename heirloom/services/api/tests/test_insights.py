@@ -42,3 +42,20 @@ def test_unrelated_change_has_no_impact(client):
     r = client.post("/impact-check", json={"change_description": "Rename the cafeteria wifi network"},
                     headers=as_("sam-okafor")).json()
     assert all(x["no_impact"] for x in r["results"])
+
+
+def test_impact_check_is_stable_after_new_sources_are_added(client):
+    """A newly approved Benefits answer must not push the eligibility rules out of the impact check."""
+    from tests.conftest import as_
+
+    q = "Does a retro pay correction trigger a benefits eligibility re-check?"
+    client.post("/ask?stream=false", json={"question": q}, headers=as_("jordan-kim"))
+    item = client.get("/inbox", headers=as_("marcus-hill")).json()["questions"][0]
+    pr = client.post(f"/inbox/{item['id']}/answer", data={"transcript": "Yes. A retro pay correction triggers a benefits "
+                     "eligibility re-check only when it changes scheduled hours for a biweekly period. Overtime-only "
+                     "corrections do not trigger a re-check, because eligibility ignores overtime hours."},
+                     headers=as_("marcus-hill")).json()
+    client.post(f"/prs/{pr['id']}/approve", headers=as_("priya-nair"))
+    r = client.post("/impact-check", json={"change_description": "Round overtime to the nearest 15 minutes instead of 6."},
+                    headers=as_("sam-okafor")).json()
+    assert not {x["team"]: x for x in r["results"]}["benefits"]["no_impact"]

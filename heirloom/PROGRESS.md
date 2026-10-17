@@ -14,7 +14,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | 7 | Insights | Done: Run standup now, overlap/reuse/conflict cards with verified evidence from both teams, confidence threshold (noise hidden), useful/not-relevant feedback that suppresses and tunes per-type thresholds, insights to leads of involved teams, impact check with per-team cards (concerns, sources, affected areas, contact). |
 | 6 | Bus factor map + exit interview | Done: leads-only map (grouped by team, sized by asks, red/amber/green, filters, stat row), topic panel (knowers, entries, sources, capture session), exit interview (consent, sole-source topics, one question at a time, voice/text, live drafts, skip, review + submit only by the person) → PRs → approve → topic turns amber. Browser E2E passes. |
 | 5 | Trust features | Done: expiry by type with "Needs re-confirmation" badge + owner ping + Re-confirm, flag as wrong → owner queue → Correct entry → correction notices to everyone who got the old answer, conflicting experts shown side by side (no winner) routed to the owner, Keep this answer. Browser E2E passes. |
-| 9 | Polish + rehearse | Not started |
+| 9 | Polish + rehearse | Done except deploy: demo mode (2-min timeouts, Run standup now, Reset demo data), Team settings page, offline badge, loading/empty states, `scripts/dev.sh`, README. **§15 walkthrough: 17/17 beats pass** in a scripted browser run. No deployed URL (needs Vercel/Render accounts). |
 | 8 | Ramp-up + credit | Backend done |
 
 ## Architecture decisions (made without asking; change if needed)
@@ -27,7 +27,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
   | llm | Claude `claude-opus-5-5` (`ANTHROPIC_API_KEY`) | scripted mock (`providers/llm_mock.py`) |
   | transcription | Whisper (`OPENAI_API_KEY`) | typed transcript required |
   | storage | Supabase Storage (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY`) | local disk `heirloom/.data/uploads` |
-- **Schema source of truth** is now `services/api/store/schema.py` (SQLAlchemy, portable). Arrays/jsonb are JSON columns; enum-like fields are strings validated in code. `db/schema.sql` is the M1 hand-written version, superseded.
+- **Schema source of truth** is `services/api/store/schema.py` (SQLAlchemy, portable). Arrays/jsonb are JSON columns; enum-like fields are strings validated in code. `db/schema.sql` is generated from it (`scripts/dump_schema.py`).
 - **Mock LLM never writes facts**: answers/insights/impact concerns are exact sentence spans from the evidence it is given, so the citation verifier runs on mock output too. Scripted parts (standup insights, rounding impact, exit-interview questions) are guarded by `tests/test_mock_scripts.py`.
 - **Certainty is labeled in code** (`orchestrator.build_card`): a citation is `expert_verified` only if it falls inside an approved entry's backing quote/source. The model's label is ignored.
 - **Agent transport**: in-process by default; `AGENT_TRANSPORT=mcp` runs each call through a per-team MCP stdio server (`services/team-agent/server.py`, mcp 2.3). Same `TeamAgent` code either way.
@@ -45,9 +45,9 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 - Web runs on port **3100** (port 3000 was taken on this machine).
 - Offline agent calls take ~1 ms, so the Network screen holds each edge lit for 1.8 s to make it visible.
 - Recent Chrome returns a Promise from `scrollIntoView`; effects must not return it (fixed in the exit interview page).
-- Impact checks search with a lower BM25 floor (0.3) for recall; the LLM/mock decides relevance.
+- Impact checks search with a lower BM25 floor (0.3) and relative cutoff (0.1) for recall, so newly added sources can't push relevant ones out (regression test included); the LLM/mock decides relevance.
 - MCP transport launches one stdio subprocess per call (~0.6 s each); fine for a demo, not tuned.
 
 ## Next
 
-M9 polish: demo mode controls (reset), loading/empty states, Team settings page, README; then §15 walkthrough.
+M8: Ramp-up page (two-week plan by dependent team, prefilled questions, people to meet, known gaps, progress checkboxes) and contributor credit on Home.

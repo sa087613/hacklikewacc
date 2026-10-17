@@ -9,12 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TEAM_NAMES, type TeamId } from "@/lib/api";
+import { post, TEAM_NAMES, type TeamId } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useDemoUser } from "@/lib/demo-user";
 
 export function UserSwitcher() {
-  const { people, user, setUserId, error } = useDemoUser();
+  const { people, user, setUserId, error, config } = useDemoUser();
   const router = useRouter();
 
   if (error) return <span className="text-xs text-white/70">API offline</span>;
@@ -48,6 +48,22 @@ export function UserSwitcher() {
               ))}
           </div>
         ))}
+        {config?.demo_mode && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={async () => {
+                if (!window.confirm("Reset all demo data to the seed state?")) return;
+                await post("/demo/reset");
+                setUserId("jordan-kim");
+                window.location.href = "/";
+              }}
+            >
+              <span className="w-4" />
+              <span className="text-adp-red">Reset demo data</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -96,7 +96,8 @@ class TeamAgent:
 
         with tx() as conn:
             owner = policy.knowledge_owner(conn, self.team_id)
-            res = search(conn, self.team_id, change_description, from_team, k=10, contact=owner, min_score=0.3)
+            res = search(conn, self.team_id, change_description, from_team, k=14, contact=owner,
+                         min_score=0.3, relative=0.1)
             evidence = evidence_from_hits(conn, res.allowed)
         result = get_llm().assess_impact(self.team_id, self.team["name"], change_description, from_team, evidence)
         return {"team": self.team_id, "result": result, "evidence": evidence, "withheld": res.withheld}

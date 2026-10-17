@@ -314,3 +314,9 @@ ask_events = sa.Table(
     sa.Column("question", sa.Text, nullable=False),
     sa.Column("created_at", UTCDateTime, nullable=False, default=now),
 )
+
+# pgvector similarity index; Postgres only (offline SQLite search is BM25).
+sa.Index(
+    "chunks_embedding_idx", chunks.c.embedding, postgresql_using="hnsw",
+    postgresql_ops={"embedding": "vector_cosine_ops"},
+).ddl_if(dialect="postgresql")
