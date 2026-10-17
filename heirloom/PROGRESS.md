@@ -15,7 +15,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | 6 | Bus factor map + exit interview | Done: leads-only map (grouped by team, sized by asks, red/amber/green, filters, stat row), topic panel (knowers, entries, sources, capture session), exit interview (consent, sole-source topics, one question at a time, voice/text, live drafts, skip, review + submit only by the person) → PRs → approve → topic turns amber. Browser E2E passes. |
 | 5 | Trust features | Done: expiry by type with "Needs re-confirmation" badge + owner ping + Re-confirm, flag as wrong → owner queue → Correct entry → correction notices to everyone who got the old answer, conflicting experts shown side by side (no winner) routed to the owner, Keep this answer. Browser E2E passes. |
 | 9 | Polish + rehearse | Done except deploy: demo mode (2-min timeouts, Run standup now, Reset demo data), Team settings page, offline badge, loading/empty states, `scripts/dev.sh`, README. **§15 walkthrough: 17/17 beats pass** in a scripted browser run. No deployed URL (needs Vercel/Render accounts). |
-| 8 | Ramp-up + credit | Backend done |
+| 8 | Ramp-up + credit | Done: two-week path across the team and its dependent teams (topics open Ask prefilled, people to meet with why, known gaps), progress checkboxes, "Ramp-up day 3 of 14" on Home; withheld topics and departing people excluded; contributor credit ("helped N people across M teams") on Home. |
 
 ## Architecture decisions (made without asking; change if needed)
 
@@ -50,4 +50,4 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 
 ## Next
 
-M8: Ramp-up page (two-week plan by dependent team, prefilled questions, people to meet, known gaps, progress checkboxes) and contributor credit on Home.
+All milestones built. Remaining: deploy (needs accounts), and a first run against live services once keys exist.

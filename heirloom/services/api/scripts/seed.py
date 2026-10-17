@@ -81,6 +81,17 @@ def seed(verbose: bool = True) -> dict:
                 if found:
                     log(f"  conflict detected on topic {entry['topic_id']}")
 
+    # Jordan joined two days ago (§9.1: "Ramp-up day 3 of 14").
+    with db.tx() as conn:
+        from datetime import timedelta
+
+        import rampup
+        from store.db import one
+        import sqlalchemy as sa
+
+        jordan = one(conn.execute(sa.select(people).where(people.c.id == "jordan-kim")))
+        rampup.generate(conn, jordan, started=datetime.now(timezone.utc) - timedelta(days=2))
+
     with db.tx() as conn:
         import sqlalchemy as sa
         from store.schema import chunks, sources

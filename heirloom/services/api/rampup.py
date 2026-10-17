@@ -8,7 +8,7 @@ import routing
 from busfactor import topic_rows
 from store.db import one, rows
 from store.schema import (answer_deliveries, contributions, knowledge_entries, new_id, now, people, rampup_items,
-                          teams, topics)
+                          source_topics, sources, teams, topics)
 
 DAYS = 14
 
@@ -24,12 +24,24 @@ def dependent_teams(conn, team_id: str) -> List[str]:
     return [d for d in dict.fromkeys(deps) if d != team_id]
 
 
+def _visible_topics(conn, person: Dict) -> set:
+    """Topics with a doc or expert answer this person may read. A ramp-up never points at withheld knowledge,
+    and meeting notes that merely mention a topic aren't something to learn from."""
+    out = set()
+    for r in conn.execute(sa.select(source_topics.c.topic_id, sources.c.share_level, sources.c.team_id, sources.c.type)
+                          .select_from(source_topics.join(sources, source_topics.c.source_id == sources.c.id))):
+        if r.type != "meeting" and (r.share_level != "team" or r.team_id == person["team_id"]):
+            out.add(r.topic_id)
+    return out
+
+
 def generate(conn, person: Dict, started=None) -> None:
     conn.execute(rampup_items.delete().where(rampup_items.c.person_id == person["id"]))
     created = started or now()
     order = [person["team_id"]] + dependent_teams(conn, person["team_id"])
     span = max(1, 10 // len(order))  # ten working days across the two weeks
-    all_topics = topic_rows(conn)
+    visible = _visible_topics(conn, person)
+    all_topics = [t for t in topic_rows(conn) if t["id"] in visible or t["status"] == "red"]
     items = []
     for i, team_id in enumerate(order):
         first_day = 1 + i * span
@@ -42,8 +54,10 @@ def generate(conn, person: Dict, started=None) -> None:
             day = min(first_day + span - 1, day + 1)
         seen = set()
         for t in team_topics[:4]:
-            ranked = routing.ranked_experts(conn, team_id, t["id"])
-            if ranked and ranked[0]["id"] != person["id"] and ranked[0]["id"] not in seen:
+            # People who are staying: a departing expert's topics show up as gaps or exit-interview work instead.
+            ranked = [p for p in routing.ranked_experts(conn, team_id, t["id"])
+                      if not p["is_departing"] and p["id"] != person["id"]]
+            if ranked and ranked[0]["id"] not in seen:
                 p = ranked[0]
                 seen.add(p["id"])
                 items.append(dict(day=first_day + min(1, span - 1), team_id=team_id, kind="person", title=p["name"],
