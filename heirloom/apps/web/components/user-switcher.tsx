@@ -10,10 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TEAM_NAMES, type TeamId } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { useDemoUser } from "@/lib/demo-user";
 
 export function UserSwitcher() {
   const { people, user, setUserId, error } = useDemoUser();
+  const router = useRouter();
 
   if (error) return <span className="text-xs text-white/70">API offline</span>;
 
@@ -33,7 +35,10 @@ export function UserSwitcher() {
             {people
               .filter((p) => p.team_id === team)
               .map((p) => (
-                <DropdownMenuItem key={p.id} onSelect={() => setUserId(p.id)}>
+                <DropdownMenuItem key={p.id} onSelect={() => {
+                    setUserId(p.id);
+                    router.refresh();
+                  }}>
                   <span className="w-4">{p.id === user?.id && <Check className="h-4 w-4" aria-hidden />}</span>
                   <span className="flex flex-col">
                     <span>{p.name}</span>

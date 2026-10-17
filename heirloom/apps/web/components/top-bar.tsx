@@ -1,4 +1,6 @@
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { Notifications } from "@/components/notifications";
+import { OfflineBadge } from "@/components/offline-badge";
 import { UserSwitcher } from "@/components/user-switcher";
 
 export function TopBar() {
@@ -10,19 +12,19 @@ export function TopBar() {
         </span>
         Heirloom
       </a>
-      <div className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-[6px] bg-white/10 px-3 py-1.5">
+      <form action="/ask" className="mx-auto flex w-full max-w-xl items-center gap-2 rounded-[6px] bg-white/10 px-3 py-1.5">
         <Search className="h-4 w-4 text-white/70" aria-hidden />
         <input
           type="search"
+          name="q"
           placeholder="Search Heirloom…"
           aria-label="Search Heirloom"
           className="w-full bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
         />
-      </div>
+      </form>
       <div className="flex shrink-0 items-center gap-2">
-        <button aria-label="Notifications" className="rounded-[6px] p-2 hover:bg-white/10">
-          <Bell className="h-5 w-5" aria-hidden />
-        </button>
+        <OfflineBadge />
+        <Notifications />
         <UserSwitcher />
       </div>
     </header>

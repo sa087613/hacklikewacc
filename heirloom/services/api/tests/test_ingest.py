@@ -1,12 +1,7 @@
-import sys
-from pathlib import Path
-
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from config import ROOT  # noqa: E402
-from ingest import PersonalDataError, check_personal_data, chunk_text, parse_file  # noqa: E402
+from config import ROOT
+from ingest import PersonalDataError, check_personal_data, chunk_text, parse_file
 
 SEED_DOCS = sorted((ROOT / "db" / "seed" / "docs").glob("*/*.md"))
 
@@ -26,9 +21,7 @@ def test_seed_docs_chunk_and_pass_screening(path):
     check_personal_data(text, meta)
     for key in ("title", "type", "share_level", "topics"):
         assert key in meta
-    chunks = chunk_text(text)
-    assert chunks
-    for c in chunks:
+    for c in chunk_text(text):
         assert text[c.start_offset : c.end_offset] == c.text
 
 
@@ -42,9 +35,16 @@ def test_flagged_document_rejected():
 
 
 @pytest.mark.parametrize(
-    "text",
-    ["Employee SSN 123-45-6789", "Routing number: 021000021", "DOB: 04/12/1990", "Employee ID: 448812"],
+    "text", ["Employee SSN 123-45-6789", "Routing number: 021000021", "DOB: 04/12/1990", "Employee ID: 448812"]
 )
 def test_personal_data_patterns_rejected(text):
     with pytest.raises(PersonalDataError):
         check_personal_data(text, {})
+
+
+def test_upload_rejects_personal_data(client):
+    from tests.conftest import as_
+
+    r = client.post("/sources/upload", headers=as_("ana-torres"), data={"team_id": "payroll"},
+                    files={"file": ("records.md", b"Payroll export\n\nEmployee SSN 123-45-6789", "text/markdown")})
+    assert r.status_code == 422
