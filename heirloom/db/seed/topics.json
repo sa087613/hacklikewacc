@@ -1,0 +1,24 @@
+[
+  {"id": "payroll-calculation", "name": "Gross-to-net calculation", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "overtime-pay", "name": "Overtime pay", "team_id": "payroll", "co_owner_team_ids": ["time", "benefits"]},
+  {"id": "retro-pay-overtime", "name": "Retro pay corrections with overtime", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "pto-payout", "name": "PTO payout at termination", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "tax-withholding", "name": "Tax withholding", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "pay-schedule", "name": "Pay calendar and cutoffs", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "eligibility-rules-engine", "name": "Eligibility rules engine (Payroll build)", "team_id": "payroll", "co_owner_team_ids": []},
+  {"id": "payroll-ot-calculator", "name": "Overtime calculator (Payroll roadmap)", "team_id": "payroll", "co_owner_team_ids": []},
+
+  {"id": "benefits-eligibility", "name": "Benefits eligibility", "team_id": "benefits", "co_owner_team_ids": []},
+  {"id": "pre-tax-deductions", "name": "Pre-tax deductions", "team_id": "benefits", "co_owner_team_ids": ["payroll"]},
+  {"id": "open-enrollment", "name": "Open enrollment", "team_id": "benefits", "co_owner_team_ids": []},
+  {"id": "cobra", "name": "COBRA continuation", "team_id": "benefits", "co_owner_team_ids": []},
+  {"id": "vendor-contracts", "name": "Benefits vendor contracts", "team_id": "benefits", "co_owner_team_ids": []},
+  {"id": "eligibility-service", "name": "New eligibility service", "team_id": "benefits", "co_owner_team_ids": []},
+
+  {"id": "timekeeping", "name": "Punches and timesheets", "team_id": "time", "co_owner_team_ids": []},
+  {"id": "overtime-rounding", "name": "Punch rounding", "team_id": "time", "co_owner_team_ids": ["payroll"]},
+  {"id": "overtime-calculator", "name": "Overtime calculator", "team_id": "time", "co_owner_team_ids": []},
+  {"id": "pto-accrual", "name": "PTO accrual", "team_id": "time", "co_owner_team_ids": []},
+  {"id": "scheduling", "name": "Scheduling", "team_id": "time", "co_owner_team_ids": []},
+  {"id": "time-integrations", "name": "Time data feeds", "team_id": "time", "co_owner_team_ids": ["payroll", "benefits"]}
+]

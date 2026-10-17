@@ -1,0 +1,11 @@
+[
+  {"id": "maria-lopez", "name": "Maria Lopez", "title": "Senior Payroll Specialist", "team_id": "payroll", "role": "expert", "is_knowledge_owner": false, "is_departing": true},
+  {"id": "raj-patel", "name": "Raj Patel", "title": "Engineering Lead", "team_id": "payroll", "role": "lead", "is_knowledge_owner": false, "is_departing": false},
+  {"id": "ana-torres", "name": "Ana Torres", "title": "Knowledge Owner", "team_id": "payroll", "role": "lead", "is_knowledge_owner": true, "is_departing": false},
+  {"id": "priya-nair", "name": "Priya Nair", "title": "Team Lead", "team_id": "benefits", "role": "lead", "is_knowledge_owner": true, "is_departing": false},
+  {"id": "marcus-hill", "name": "Marcus Hill", "title": "Eligibility Engineer", "team_id": "benefits", "role": "expert", "is_knowledge_owner": false, "is_departing": false},
+  {"id": "lena-park", "name": "Lena Park", "title": "Scrum Master", "team_id": "benefits", "role": "member", "is_knowledge_owner": false, "is_departing": false},
+  {"id": "sam-okafor", "name": "Sam Okafor", "title": "Engineering Lead", "team_id": "time", "role": "lead", "is_knowledge_owner": true, "is_departing": false},
+  {"id": "jordan-kim", "name": "Jordan Kim", "title": "Software Engineer", "team_id": "time", "role": "member", "is_knowledge_owner": false, "is_departing": false},
+  {"id": "chloe-reyes", "name": "Chloe Reyes", "title": "Product Manager", "team_id": "time", "role": "expert", "is_knowledge_owner": false, "is_departing": false}
+]

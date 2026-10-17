@@ -1,0 +1,116 @@
+[
+  {
+    "key": "ot-gross-pretax",
+    "team_id": "payroll",
+    "topic_id": "overtime-pay",
+    "question": "Is overtime included in gross pay before pre-tax benefit deductions are calculated?",
+    "answer": {
+      "summary": "Yes. Overtime earnings are added to gross pay first, and pre-tax benefit deductions are calculated on total gross pay, including overtime.",
+      "steps": [],
+      "caveats": ["The deduction amount itself is fixed per period; overtime changes the base it is taken from, not the amount."]
+    },
+    "entry_type": "process",
+    "share_level": "cross_team",
+    "status": "approved",
+    "verified_by": "maria-lopez",
+    "verified_at": "2026-10-17",
+    "sources": [
+      {"doc": "payroll/payroll-calculation-guide.md", "quote": "Pre-tax benefit deductions are calculated on total gross pay, including overtime."}
+    ]
+  },
+  {
+    "key": "elig-scheduled-hours",
+    "team_id": "benefits",
+    "topic_id": "benefits-eligibility",
+    "question": "Do overtime hours count toward benefits eligibility?",
+    "answer": {
+      "summary": "No. Benefits eligibility uses scheduled hours, not overtime hours.",
+      "steps": [],
+      "caveats": ["Paid time off does count as eligible hours."]
+    },
+    "entry_type": "process",
+    "share_level": "cross_team",
+    "status": "approved",
+    "verified_by": "marcus-hill",
+    "verified_at": "2026-09-30",
+    "sources": [
+      {"doc": "benefits/eligibility-rules.md", "quote": "Benefits eligibility uses scheduled hours, not overtime hours."}
+    ]
+  },
+  {
+    "key": "pto-payout-final-check",
+    "team_id": "payroll",
+    "topic_id": "pto-payout",
+    "question": "When is unused PTO paid out after an employee leaves?",
+    "answer": {
+      "summary": "On the employee's final paycheck, issued in an off-cycle run on the last day of work.",
+      "steps": [],
+      "caveats": []
+    },
+    "entry_type": "process",
+    "share_level": "cross_team",
+    "status": "approved",
+    "verified_by": "ana-torres",
+    "verified_at": "2026-07-08",
+    "sources": [
+      {"doc": "payroll/payroll-faq.md", "quote": "Unused PTO is paid on the employee's final paycheck, issued in an off-cycle run on the last day of work."}
+    ]
+  },
+  {
+    "key": "pto-payout-next-regular",
+    "team_id": "payroll",
+    "topic_id": "pto-payout",
+    "question": "What is the timing for paying out unused PTO at termination?",
+    "answer": {
+      "summary": "Unused PTO is paid on the next regular pay date after termination, not in a same-day off-cycle run, unless state law requires immediate payment.",
+      "steps": [],
+      "caveats": ["States that require immediate final pay override this."]
+    },
+    "entry_type": "process",
+    "share_level": "cross_team",
+    "status": "approved",
+    "verified_by": "maria-lopez",
+    "verified_at": "2026-10-06",
+    "sources": [
+      {"doc": "payroll/payroll-meeting-notes.md", "quote": "pay unused PTO on the next regular pay date after termination, not in a same-day off-cycle run, unless state law requires immediate payment"}
+    ]
+  },
+  {
+    "key": "time-punch-edits-expired",
+    "team_id": "time",
+    "topic_id": "timekeeping",
+    "question": "Can employees edit their own punches after submitting a timesheet?",
+    "answer": {
+      "summary": "No. After submission, only a manager can edit punches, and the edit requires re-approval.",
+      "steps": [],
+      "caveats": []
+    },
+    "entry_type": "process",
+    "share_level": "company",
+    "status": "expired",
+    "verified_by": "sam-okafor",
+    "verified_at": "2026-02-17",
+    "sources": [
+      {"doc": "time/time-faq.md", "quote": "After submission, only a manager can edit punches, and the edit requires re-approval."}
+    ]
+  },
+  {
+    "key": "ot-weekly",
+    "team_id": "payroll",
+    "topic_id": "overtime-pay",
+    "question": "Is overtime calculated per week or per pay period?",
+    "answer": {
+      "summary": "Per workweek. Hours are never averaged across two weeks, even when the pay period is biweekly.",
+      "steps": [],
+      "caveats": ["Some states also require daily overtime."]
+    },
+    "entry_type": "regulation",
+    "share_level": "cross_team",
+    "status": "approved",
+    "verified_by": "maria-lopez",
+    "verified_at": "2026-08-12",
+    "sources": [
+      {"doc": "payroll/overtime-policy.md", "quote": "Overtime is calculated weekly."}
+    ]
+  }
+]

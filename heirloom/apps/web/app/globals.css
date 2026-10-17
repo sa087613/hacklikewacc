@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-surface-muted text-adp-navy;
+  }
+  body {
+    @apply text-sm antialiased;
+  }
+  * {
+    @apply border-border;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-adp-red-bright ring-offset-1;
+  }
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "payroll",
+    "name": "Payroll",
+    "accent_color": "#2E3A6E",
+    "default_share_level": "cross_team",
+    "capability_card": {
+      "summary": "Owns gross-to-net pay calculation, overtime pay, retro pay, tax withholding, PTO payout, and the pay calendar.",
+      "owned_topics": ["payroll-calculation", "overtime-pay", "retro-pay-overtime", "pto-payout", "tax-withholding", "pay-schedule"],
+      "contacts": [
+        {"person_id": "ana-torres", "for": "knowledge questions and access requests"},
+        {"person_id": "raj-patel", "for": "PayCore engineering and roadmap"}
+      ]
+    }
+  },
+  {
+    "id": "benefits",
+    "name": "Benefits",
+    "accent_color": "#0D9488",
+    "default_share_level": "cross_team",
+    "capability_card": {
+      "summary": "Owns benefits eligibility, pre-tax deductions, open enrollment, COBRA continuation, and benefits vendor relationships.",
+      "owned_topics": ["benefits-eligibility", "pre-tax-deductions", "open-enrollment", "cobra", "vendor-contracts", "eligibility-service"],
+      "contacts": [
+        {"person_id": "priya-nair", "for": "knowledge questions and access requests"},
+        {"person_id": "marcus-hill", "for": "eligibility logic and BenHub engineering"}
+      ]
+    }
+  },
+  {
+    "id": "time",
+    "name": "Time & Attendance",
+    "accent_color": "#7C3AED",
+    "default_share_level": "cross_team",
+    "capability_card": {
+      "summary": "Owns time capture, punch rounding, overtime hour calculation, PTO accrual, scheduling, and time data feeds to Payroll and Benefits.",
+      "owned_topics": ["timekeeping", "overtime-rounding", "overtime-calculator", "pto-accrual", "scheduling", "time-integrations"],
+      "contacts": [
+        {"person_id": "sam-okafor", "for": "ClockLine engineering and integrations"},
+        {"person_id": "chloe-reyes", "for": "product decisions and roadmap"}
+      ]
+    }
+  }
+]
