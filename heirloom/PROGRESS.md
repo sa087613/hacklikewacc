@@ -11,7 +11,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | 2 | Single-agent answers | Done: Ask page, §7 answer card, source side panel at exact passage, trace panel, citation verifier + fabricated-quote tests |
 | 3 | Agent-to-agent | Done: MCP servers per team (verified end to end with `AGENT_TRANSPORT=mcp`), hop/loop rules, share policy + withheld notices, Network screen with live edges, edge → exchange panel, audit log |
 | 4 | Learning loop | Done: route to expert (caps, dedupe, escalation), Inbox with typed or voice-note answers (offline: transcript + demo samples; live: MediaRecorder → Whisper), structured draft, PR review (share level, expiry, approve/edit/reject), asker notified, instant re-answer. Browser E2E passes. |
-| 7 | Insights | Backend done |
+| 7 | Insights | Done: Run standup now, overlap/reuse/conflict cards with verified evidence from both teams, confidence threshold (noise hidden), useful/not-relevant feedback that suppresses and tunes per-type thresholds, insights to leads of involved teams, impact check with per-team cards (concerns, sources, affected areas, contact). |
 | 6 | Bus factor map + exit interview | Backend done |
 | 5 | Trust features | Backend done |
 | 9 | Polish + rehearse | Not started |
@@ -44,8 +44,9 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 - Mock answers are sentence extraction: correct and cited, but sometimes terse or quoting a chat note verbatim. Claude composes real prose once `ANTHROPIC_API_KEY` is set.
 - Web runs on port **3100** (port 3000 was taken on this machine).
 - Offline agent calls take ~1 ms, so the Network screen holds each edge lit for 1.8 s to make it visible.
+- Impact checks search with a lower BM25 floor (0.3) for recall; the LLM/mock decides relevance.
 - MCP transport launches one stdio subprocess per call (~0.6 s each); fine for a demo, not tuned.
 
 ## Next
 
-M7 frontend: Insights (standup run button, insight cards with evidence + useful/not relevant/thread, impact check form + per-team cards).
+M6 frontend: Knowledge bus factor map (leads only), topic panel with capture session, exit interview screen (consent, topic list, interview chat, live drafts, review + submit as the person).

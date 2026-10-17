@@ -92,8 +92,10 @@ def _vector_scores(conn: sa.Connection, team_id: str, query: str) -> Dict[str, f
 
 
 def search(
-    conn: sa.Connection, team_id: str, query: str, asker_team: Optional[str], k: int = 8, contact: Optional[Dict] = None
+    conn: sa.Connection, team_id: str, query: str, asker_team: Optional[str], k: int = 8, contact: Optional[Dict] = None,
+    min_score: float = 1.0,
 ) -> SearchResult:
+    """min_score is the BM25 floor; impact checks pass a lower one for recall (the LLM judges relevance)."""
     docs, bm = _corpus(conn, team_id)
     if not docs:
         return SearchResult()
@@ -114,7 +116,7 @@ def search(
             if cid in id_to_i:
                 fused[id_to_i[cid]] = fused.get(id_to_i[cid], 0) + 1 / (60 + rank)
 
-    threshold = max(1.0, 0.3 * top)
+    threshold = max(min_score, 0.3 * top)
     result = SearchResult()
     withheld_seen = set()
     for i in sorted(fused, key=lambda i: -fused[i]):
