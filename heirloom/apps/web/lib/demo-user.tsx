@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, setApiPerson, type Person } from "@/lib/api";
+import { api, DEMO_USER_KEY, setApiPerson, type Person } from "@/lib/api";
 
 // No real auth (§20): a top-bar switcher picks who you are. Jordan is the demo default.
 const DEFAULT_USER_ID = "jordan-kim";
-const STORAGE_KEY = "heirloom.demoUser";
+const STORAGE_KEY = DEMO_USER_KEY;
 
 export type AppConfig = {
   providers: Record<string, string>;

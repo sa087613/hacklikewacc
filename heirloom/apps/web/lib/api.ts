@@ -93,8 +93,18 @@ export const KEEPER_NAMES: Record<TeamId, string> = {
 
 export const TEAMS: TeamId[] = ["payroll", "benefits", "time"];
 
-// The demo user is set by DemoUserProvider and sent with every request (§20: no real auth).
-let currentPersonId = "jordan-kim";
+// The demo user is sent with every request (§20: no real auth). Read synchronously at load, because
+// child components fetch in effects that run before DemoUserProvider's own effect.
+export const DEMO_USER_KEY = "heirloom.demoUser";
+function savedPerson(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(DEMO_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+let currentPersonId = savedPerson() ?? "jordan-kim";
 export function setApiPerson(id: string) {
   currentPersonId = id;
 }

@@ -196,8 +196,8 @@ class MockLLM:
                 steps.append(s)
             elif len(summary) < 2 and not steps:
                 summary.append(s)
-            else:
-                steps.append(s)
+            else:  # context that isn't an action (who else knows, background) is kept as a note
+                caveats.append(s)
         if len(summary) == 1 and len(summary[0].split()) <= 2 and steps:  # "Yes." + the real answer
             summary.append(steps.pop(0))
         regulation = re.search(r"\b(law|irs|flsa|regulation|statute|tax rule|withholding)\b", transcript, re.I)
