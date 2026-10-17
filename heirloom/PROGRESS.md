@@ -9,7 +9,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | --- | --- | --- |
 | 1 | Foundation | Done (commit 6eaf764) |
 | 2 | Single-agent answers | Done: Ask page, §7 answer card, source side panel at exact passage, trace panel, citation verifier + fabricated-quote tests |
-| 3 | Agent-to-agent | Backend done |
+| 3 | Agent-to-agent | Done: MCP servers per team (verified end to end with `AGENT_TRANSPORT=mcp`), hop/loop rules, share policy + withheld notices, Network screen with live edges, edge → exchange panel, audit log |
 | 4 | Learning loop | Backend done |
 | 7 | Insights | Backend done |
 | 6 | Bus factor map + exit interview | Backend done |
@@ -43,7 +43,9 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 
 - Mock answers are sentence extraction: correct and cited, but sometimes terse or quoting a chat note verbatim. Claude composes real prose once `ANTHROPIC_API_KEY` is set.
 - Web runs on port **3100** (port 3000 was taken on this machine).
+- Offline agent calls take ~1 ms, so the Network screen holds each edge lit for 1.8 s to make it visible.
+- MCP transport launches one stdio subprocess per call (~0.6 s each); fine for a demo, not tuned.
 
 ## Next
 
-M3 frontend: Network screen (React Flow, live edges over `/network/stream`, audit log, edge click → exchange).
+M4 frontend: Inbox (questions for me with text/voice-transcript answers, knowledge PR review with edit/approve/reject).
