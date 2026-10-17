@@ -13,7 +13,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 | 4 | Learning loop | Done: route to expert (caps, dedupe, escalation), Inbox with typed or voice-note answers (offline: transcript + demo samples; live: MediaRecorder → Whisper), structured draft, PR review (share level, expiry, approve/edit/reject), asker notified, instant re-answer. Browser E2E passes. |
 | 7 | Insights | Done: Run standup now, overlap/reuse/conflict cards with verified evidence from both teams, confidence threshold (noise hidden), useful/not-relevant feedback that suppresses and tunes per-type thresholds, insights to leads of involved teams, impact check with per-team cards (concerns, sources, affected areas, contact). |
 | 6 | Bus factor map + exit interview | Done: leads-only map (grouped by team, sized by asks, red/amber/green, filters, stat row), topic panel (knowers, entries, sources, capture session), exit interview (consent, sole-source topics, one question at a time, voice/text, live drafts, skip, review + submit only by the person) → PRs → approve → topic turns amber. Browser E2E passes. |
-| 5 | Trust features | Backend done |
+| 5 | Trust features | Done: expiry by type with "Needs re-confirmation" badge + owner ping + Re-confirm, flag as wrong → owner queue → Correct entry → correction notices to everyone who got the old answer, conflicting experts shown side by side (no winner) routed to the owner, Keep this answer. Browser E2E passes. |
 | 9 | Polish + rehearse | Not started |
 | 8 | Ramp-up + credit | Backend done |
 
@@ -50,4 +50,4 @@ Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `provid
 
 ## Next
 
-M5 frontend: owner review of flags (fix entry → correction notices), conflicts (side by side, keep one), re-confirm expired entries; a visible correction flow.
+M9 polish: demo mode controls (reset), loading/empty states, Team settings page, README; then §15 walkthrough.

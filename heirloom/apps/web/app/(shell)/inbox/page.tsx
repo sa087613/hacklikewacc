@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VoiceInput, type VoiceNote } from "@/components/voice-input";
-import { api, post, TEAM_NAMES, timeAgo, type TeamId } from "@/lib/api";
+import { api, post, TEAM_NAMES, timeAgo, type EntryView, type TeamId } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,14 @@ type Question = {
   escalated_to: string | null;
   expert: string | null;
 };
-type Inbox = { questions: Question[]; prs: PR[]; conflicts: Conflict[]; flags: FlagItem[]; is_reviewer: boolean };
+type Inbox = {
+  questions: Question[];
+  prs: PR[];
+  conflicts: Conflict[];
+  flags: FlagItem[];
+  reconfirm: EntryView[];
+  is_reviewer: boolean;
+};
 
 function Composer({ q, onDone }: { q: Question; onDone: (pr: PR) => void }) {
   const [mode, setMode] = useState<"text" | "voice">("text");
@@ -91,7 +98,8 @@ function InboxInner() {
     setDrafts([]);
   }, [load, version]);
 
-  const reviewCount = (data?.prs.length ?? 0) + (data?.conflicts.length ?? 0) + (data?.flags.length ?? 0);
+  const reviewCount =
+    (data?.prs.length ?? 0) + (data?.conflicts.length ?? 0) + (data?.flags.length ?? 0) + (data?.reconfirm.length ?? 0);
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Inbox</h1>
@@ -196,8 +204,8 @@ function InboxInner() {
           {data.prs.map((pr) => (
             <PrCard key={pr.id} pr={pr} canReview={data.is_reviewer} onDone={(m) => (setToast(m), load())} />
           ))}
-          {data.is_reviewer && data.prs.length === 0 && <Card className="text-sm text-muted">No knowledge PRs waiting.</Card>}
-          <ReviewExtras conflicts={data.conflicts} flags={data.flags} onDone={(m) => (setToast(m), load())} />
+          {data.is_reviewer && reviewCount === 0 && <Card className="text-sm text-muted">Nothing to review.</Card>}
+          <ReviewExtras conflicts={data.conflicts} flags={data.flags} reconfirm={data.reconfirm} onDone={(m) => (setToast(m), load())} />
         </div>
       )}
     </div>

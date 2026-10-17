@@ -57,7 +57,10 @@ def inbox(person=Depends(current_person)):
                                       "answer": {"question": a["question"], "lead": a["card"].get("lead")}})
         asked = rows(conn.execute(sa.select(inbox_items).where(inbox_items.c.asker_person_id == person["id"])
                                   .order_by(inbox_items.c.created_at.desc()).limit(20)))
+        expired = rows(conn.execute(sa.select(knowledge_entries).where(
+            knowledge_entries.c.status == "expired", knowledge_entries.c.team_id == person["team_id"]))) if reviewer else []
         return {
+            "reconfirm": [knowledge.entry_view(conn, e) for e in expired],
             "questions": [_question_view(conn, i, names) for i in mine],
             "prs": [knowledge.pr_view(conn, p) for p in prs],
             "conflicts": knowledge.open_conflicts(conn, [person["team_id"]]) if reviewer else [],

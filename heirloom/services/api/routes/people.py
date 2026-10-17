@@ -162,6 +162,14 @@ def badges(person=Depends(current_person)):
         prs = conn.execute(sa.select(sa.func.count()).select_from(knowledge_prs).where(
             knowledge_prs.c.status == "open", knowledge_prs.c.team_id == person["team_id"])).scalar() if reviewer else 0
         conflicts = len(knowledge.open_conflicts(conn, [person["team_id"]])) if reviewer else 0
+        from store.schema import entry_flags, knowledge_entries
+
+        if reviewer:
+            conflicts += conn.execute(sa.select(sa.func.count()).select_from(knowledge_entries).where(
+                knowledge_entries.c.status == "expired", knowledge_entries.c.team_id == person["team_id"])).scalar()
+            conflicts += conn.execute(sa.select(sa.func.count()).select_from(
+                entry_flags.join(knowledge_entries, entry_flags.c.entry_id == knowledge_entries.c.id)).where(
+                entry_flags.c.resolved_at.is_(None), knowledge_entries.c.team_id == person["team_id"])).scalar()
         ins = sum(1 for i in standup.list_insights(conn, person) if i["status"] == "new")
         unread = conn.execute(sa.select(sa.func.count()).select_from(notifications).where(
             notifications.c.person_id == person["id"], notifications.c.read_at.is_(None))).scalar()

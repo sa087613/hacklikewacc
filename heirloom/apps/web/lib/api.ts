@@ -184,9 +184,11 @@ export function timeAgo(iso: string | null | undefined): string {
 
 export function shortDate(iso: string | null | undefined): string {
   if (!iso) return "";
+  // Verification dates are stored as UTC days; format them in UTC so they don't shift a day.
   return new Date(iso.length === 10 ? iso + "T12:00:00Z" : iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 

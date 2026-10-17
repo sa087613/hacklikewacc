@@ -173,6 +173,8 @@ def build_card(conn, draft: Dict, evidence: List[Dict], withheld: List[Dict], co
             seen.add(w["source_id"])
             withheld_out.append({k: w[k] for k in ("team", "item", "contact", "contact_id")})
 
+    if conflict:  # never pick a winner between approved answers (§6)
+        lead = "Approved answers on this disagree. Both are shown below until the knowledge owner resolves it."
     state = "conflict" if conflict else ("answer" if answered else "no_answer")
     return {
         "agent_team": agent_team,

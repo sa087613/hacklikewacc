@@ -13,7 +13,8 @@ import {
   WithheldNotice,
 } from "@/components/status";
 import { Button } from "@/components/ui/button";
-import { KEEPER_NAMES, post, shortDate, TEAM_NAMES, type AnswerCard as Card, type Certainty } from "@/lib/api";
+import { isLead, KEEPER_NAMES, post, shortDate, TEAM_NAMES, type AnswerCard as Card, type Certainty } from "@/lib/api";
+import { useDemoUser } from "@/lib/demo-user";
 import { cn } from "@/lib/utils";
 
 function overall(card: Card): Certainty {
@@ -35,6 +36,8 @@ export function AnswerCard({
   const [feedback, setFeedback] = useState<null | "helpful" | "flagged" | "flagging">(null);
   const [reason, setReason] = useState("");
   const [flagResult, setFlagResult] = useState<string | null>(null);
+  const [reconfirmed, setReconfirmed] = useState<string | null>(null);
+  const { user } = useDemoUser();
 
   const firstCitation = (n: number) => {
     for (const p of card.points) for (const c of p.citations) if (c.n === n) return c;
@@ -130,10 +133,24 @@ export function AnswerCard({
         {/* 4. Trust row */}
         <div className="flex flex-wrap items-center gap-2">
           {card.verified_by && <VerifiedBadge person={card.verified_by.person} date={card.verified_by.date} />}
-          <CertaintyLabel certainty={overall(card)} />
-          {card.needs_reconfirmation && (
+          {!card.conflict && <CertaintyLabel certainty={overall(card)} />}
+          {card.needs_reconfirmation && !reconfirmed && (
             <ReconfirmBadge months={card.needs_reconfirmation.months_ago} requested={card.needs_reconfirmation.requested} />
           )}
+          {card.needs_reconfirmation && isLead(user) && !reconfirmed && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                post(`/entries/${card.needs_reconfirmation!.entry_id}/reconfirm`)
+                  .then(() => setReconfirmed("Re-confirmed. Expiry reset."))
+                  .catch((e) => setReconfirmed(e.message))
+              }
+            >
+              Re-confirm
+            </Button>
+          )}
+          {reconfirmed && <span className="text-xs text-muted">{reconfirmed}</span>}
           {card.pending_expert && <PendingBadge pending={card.pending_expert} />}
           {card.verification.dropped_citations > 0 && (
             <span className="inline-flex items-center gap-1 text-xs text-muted" title="Quotes that were not found verbatim in their sources were removed.">
