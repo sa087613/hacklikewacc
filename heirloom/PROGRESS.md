@@ -73,10 +73,12 @@ Layout, styling, and copy only. Routes, API calls, state logic, backend, and tes
 
 ## Vercel deployment (Oct 2026)
 
-- Two Vercel projects: API (root `heirloom/`, `vercel.json` + `api/index.py`, Python function) and web (root `heirloom/apps/web`). Steps in README.
-- Data on Vercel: Neon Postgres via `DATABASE_URL`. The Postgres path is now **tested**: the full suite passes against a local Postgres 16 + pgvector (`HEIRLOOM_TEST_DATABASE_URL=... pytest`), and a simulated cold start on an empty Postgres seeds exactly once under an advisory lock (`store/bootstrap.py`).
-- Serverless changes: seeding also runs from the first request (the lifespan hook may not run), data dir is `/tmp/heirloom` when `VERCEL` is set, no connection pooling on Vercel, `WEB_ORIGIN` accepts a comma-separated list, and `postgres://` URLs are accepted.
-- Still never run live: Claude (no key in local `.env`), OpenAI embeddings and Whisper, Supabase Storage. After deploying, `/health` should show `"llm": "claude"`.
+- **Vercel Services**, one project (root `heirloom/`): `web` (apps/web, Next.js) at `/`, `api` (services/api, FastAPI `main:app`) at `/api`. Vercel forwards the full path, so the API mounts its routes under `/api` when `VERCEL` is set (`settings.api_prefix`); locally it stays at the root. The web app defaults `NEXT_PUBLIC_API_URL` to `/api` on Vercel (next.config.ts).
+- **When `VERCEL` is set**: agents run in-process only (`settings.effective_agent_transport`; `AGENT_TRANSPORT=mcp` is ignored), and nothing is written to disk: SQLite is in memory (`StaticPool`), uploads go to `MemoryStorage`, and seed data comes from `services/api/seed_bundle.json`, loaded into memory and seeded on the first request (`store/bootstrap.py`). With `DATABASE_URL`, Postgres is used instead (no pooling; an advisory lock guards first-run seeding).
+- `db/seed` is still the editable source: run `scripts/build_seed_bundle.py` after editing it. `tests/test_seed_bundle.py` fails if the bundle is stale.
+- `tests/test_vercel_mode.py` runs the API in a fresh process with `VERCEL=1` and `AGENT_TRANSPORT=mcp`. It asserts in-process agents (an MCP trap fails the test), routes under `/api`, seed from memory, and no files written.
+- The Postgres path is tested: the full suite passes against local Postgres 16 + pgvector (`HEIRLOOM_TEST_DATABASE_URL=... pytest`).
+- Not verifiable from here: a real Vercel build (bundling, Python version pinned via `services/api/.python-version`) and live Claude (no key in local `.env`).
 
 ## Verification (last run)
 

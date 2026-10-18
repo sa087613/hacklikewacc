@@ -1,0 +1,663 @@
+{
+ "docs": {
+  "benefits/benefits-faq.md": "---\ntitle: Benefits FAQ\ntype: doc\nshare_level: company\ntopics: [benefits-eligibility, pre-tax-deductions, open-enrollment]\nauthors: [lena-park]\ncontains_personal_data: false\n---\n\n# Benefits FAQ\n\n**Does overtime make someone eligible for benefits?**\nNo. Eligibility uses scheduled hours, not overtime. See Benefits Eligibility Rules.\n\n**Do deductions go up when an employee works overtime?**\nNo. Deduction amounts are fixed per pay period.\n\n**When is open enrollment?**\nOctober 15–31. (Outdated: open enrollment moved to November 1–15 in 2025.)\n\n**Who do I contact about vendor issues?**\nPriya Nair.\n",
+  "benefits/benefits-meeting-notes.md": "---\ntitle: Benefits team sync notes (Oct 2026)\ntype: meeting\nshare_level: cross_team\ntopics: [eligibility-service, vendor-contracts]\nauthors: [lena-park]\ncontains_personal_data: false\n---\n\n# Benefits team sync notes\n\n## Oct 7, 2026\n\nAttendees: Priya Nair, Marcus Hill, Lena Park\n\n- Team photo rescheduled to Thursday.\n- Marcus walked through the eligibility service draft. Priya approved moving forward.\n- Vendor renewal conversation starts in November. Details stay within the Benefits team.\n\n## Oct 14, 2026\n\nAttendees: Priya Nair, Marcus Hill, Lena Park\n\n- Eligibility service build started.\n- Marcus asked whether a retro pay correction should trigger an eligibility re-check. Nobody knew. Parked.\n- Lena on PTO next Monday.\n",
+  "benefits/benefits-sprint-plan.md": "---\ntitle: Benefits Engineering · Sprint plan (Oct 13–24)\ntype: doc\nshare_level: cross_team\ntopics: [eligibility-service, open-enrollment]\nauthors: [lena-park]\ncontains_personal_data: false\n---\n\n# Benefits Engineering · Sprint plan (Oct 13–24)\n\nScrum Master: Lena Park\n\n## Committed\n\n1. **New eligibility service, phase 1** (Marcus Hill, 13 points): rule format, hours-based evaluation, API skeleton. See design doc (Oct 10).\n2. Open enrollment readiness checklist (Lena Park, 3 points)\n3. COBRA notice template update (2 points)\n\n## Carryover\n\n- BenHub login timeout bug\n",
+  "benefits/cobra-process.md": "---\ntitle: COBRA Continuation Process\ntype: doc\nshare_level: cross_team\ntopics: [cobra]\nauthors: [priya-nair]\ncontains_personal_data: false\n---\n\n# COBRA Continuation Process\n\n## Trigger\n\nA qualifying event: termination, reduction in hours that causes loss of eligibility, or loss of dependent status.\n\n## Notice\n\nBenHub sends the election notice within 14 days of being notified of the qualifying event.\n\n## Election\n\nThe individual has 60 days to elect continuation. Coverage is retroactive to the loss date if elected.\n",
+  "benefits/deductions-process.md": "---\ntitle: Pre-tax Deductions Process\ntype: doc\nshare_level: cross_team\ntopics: [pre-tax-deductions]\nauthors: [priya-nair]\ncontains_personal_data: false\n---\n\n# Pre-tax Deductions Process\n\nOwner: Priya Nair\n\n## Overview\n\nBenefits sends each employee's elections to Payroll every pay period. Payroll deducts the per-period amount from gross pay.\n\n## How amounts are calculated\n\nThe per-period deduction is the annual employee premium divided by the number of pay periods in the year. The deduction amount does not change with hours worked or overtime.\n\n## Timing\n\nElections approved in BenHub before payroll cutoff are sent in that period's file. Later changes start the following period. Missed deductions are caught up over the next two periods, not in a single period.\n\n## Eligibility changes\n\nIf an employee loses eligibility, BenHub sends a stop record, and deductions end with the last pay date in the coverage month.\n",
+  "benefits/eligibility-rules.md": "---\ntitle: Benefits Eligibility Rules\ntype: doc\nshare_level: cross_team\ntopics: [benefits-eligibility]\nauthors: [marcus-hill, priya-nair]\ncontains_personal_data: false\n---\n\n# Benefits Eligibility Rules\n\nOwner: Priya Nair · Maintained by: Marcus Hill · System: BenHub\n\n## 1. Who is eligible\n\nAn employee is eligible for medical, dental, and vision coverage when they are a full-time employee, or a part-time employee who meets the hours threshold in section 2.\n\n## 2. Hours threshold\n\n### 2.1 Measurement\n\nEligibility hours are measured over each biweekly period. An employee meets the threshold when they have 60 or more eligible hours in the biweekly period, which equals an average of 30 hours per week. BenHub assumes all hours arrive as biweekly totals; it does not look at individual workweeks.\n\n### 2.2 Which hours count\n\nBenefits eligibility uses scheduled hours, not overtime hours. Overtime hours are excluded from the eligibility calculation so that a temporary overtime spike does not make an employee eligible and then ineligible again. Paid time off counts as eligible hours.\n\n### 2.3 Look-back\n\nVariable-hour employees are measured over a 12-month standard measurement period. If the average is 30 or more hours per week, coverage is offered for the following 12-month stability period.\n\n## 3. Waiting period\n\nCoverage begins on the first of the month after 60 days of employment.\n\n## 4. Loss of eligibility\n\nIf an employee drops below the threshold for two consecutive biweekly periods and is not in a stability period, coverage ends at the end of the month. The employee is offered COBRA.\n\n## 5. Inputs\n\nBenHub receives hours from ClockLine every two weeks as a biweekly total per employee, split into scheduled hours and overtime hours.\n",
+  "benefits/eligibility-service-design.md": "---\ntitle: Design doc · New eligibility service\ntype: doc\nshare_level: cross_team\ntopics: [eligibility-service, benefits-eligibility]\nauthors: [marcus-hill]\ncontains_personal_data: false\n---\n\n# Design doc · New eligibility service\n\nAuthor: Marcus Hill · Date: Oct 10, 2026 · Status: In review · Reviewers: Priya Nair\n\n## Problem\n\nEligibility logic lives inside BenHub's enrollment code. It is hard to test, and other systems cannot ask \"is this employee eligible?\" without going through enrollment.\n\n## Proposal\n\nBuild a new eligibility service: a standalone service that evaluates employee eligibility for benefits from hours, employment status, and waiting periods, and exposes the result through an API.\n\n## Scope\n\n- Rule definitions stored as versioned JSON\n- Hours-based eligibility (biweekly measurement, look-back periods)\n- Waiting periods and stability periods\n- An API: `GET /eligibility/{employee}/{period}`\n\n## Timeline\n\nBuild starts this sprint (Oct 13). Target: pilot clients in January 2027.\n\n## Open questions\n\n- Should other teams (Payroll) call this service instead of keeping their own eligibility checks? Not discussed with Payroll yet.\n- How do retroactive hours changes affect a decision that was already made? Unknown, needs follow-up.\n\n## Alternatives considered\n\n- Keep logic in BenHub: rejected, not reusable.\n- Buy a vendor rules engine: rejected on cost.\n",
+  "benefits/open-enrollment-guide.md": "---\ntitle: Open Enrollment Guide\ntype: doc\nshare_level: company\ntopics: [open-enrollment]\nauthors: [priya-nair, lena-park]\ncontains_personal_data: false\n---\n\n# Open Enrollment Guide\n\nOwner: Priya Nair\n\n## Window\n\nOpen enrollment runs November 1–15 each year. Elections take effect January 1.\n\n## What employees can change\n\nMedical, dental, and vision plans; dependents; FSA and HSA contributions.\n\n## After the window\n\nChanges outside open enrollment require a qualifying life event (marriage, birth, loss of other coverage) reported within 30 days.\n\n## Support\n\nLena Park coordinates the enrollment readiness checklist. Escalations go to Priya Nair.\n",
+  "benefits/vendor-contract-terms.md": "---\ntitle: Benefits vendor contract terms (Bellwether Health Administrators)\ntype: doc\nshare_level: team\nlabel: vendor contract terms\ntopics: [vendor-contracts]\nauthors: [priya-nair]\ncontains_personal_data: false\n---\n\n# Benefits vendor contract terms\n\nVendor: Bellwether Health Administrators (fictional) · Owner: Priya Nair · Confidential: Benefits team only\n\n## Term\n\nThree-year agreement, renewing January 2027. Either party may terminate with 180 days' notice.\n\n## Pricing\n\nPer-employee-per-month administration fee of $4.10, with a volume discount tier above 50,000 covered lives.\n\n## Service levels\n\nEnrollment files processed within 2 business days. Late processing credits of 5% of the monthly fee per missed day.\n\n## Retroactive eligibility changes\n\nRetroactive eligibility changes caused by corrected hours or retro pay corrections are billed by the vendor per change record, and must be submitted within 60 days of the original coverage date.\n\n## Data handling\n\nThe vendor receives enrollment elections only. No payroll amounts are shared.\n",
+  "payroll/overtime-policy.md": "---\ntitle: Overtime Policy\ntype: doc\nshare_level: cross_team\ntopics: [overtime-pay]\nauthors: [maria-lopez]\ncontains_personal_data: false\n---\n\n# Overtime Policy\n\nOwner: Payroll · Effective: January 2026\n\n## Purpose\n\nThis policy defines how Payroll calculates overtime pay for non-exempt employees.\n\n## Workweek\n\nThe workweek is a fixed, recurring period of 168 hours, Sunday 12:00 a.m. through Saturday 11:59 p.m., unless a client configures a different start day.\n\n## Calculation\n\nOvertime is calculated weekly. Each workweek stands alone: hours are never averaged across two weeks, even when the pay period is biweekly. An employee who works 50 hours in week one and 30 hours in week two of a biweekly period is owed 10 hours of overtime, even though total hours equal 80.\n\nOvertime is paid at 1.5 times the regular rate for hours worked over 40 in the workweek.\n\n## Hours worked\n\nHours worked include all time the employee is required to be on duty. Paid time off, holidays, and sick time are not hours worked and do not count toward the 40-hour threshold.\n\n## State rules\n\nSome states require daily overtime (for example, over 8 hours in a day). PayCore applies state daily overtime rules when the client's work location requires it. Daily and weekly overtime are not paid twice for the same hour.\n\n## Source of hours\n\nPayroll uses the approved hours delivered by ClockLine. ClockLine identifies which hours are overtime; Payroll applies the rate. If ClockLine and PayCore disagree on overtime hours, PayCore uses ClockLine's hours and raises an exception.\n\n## Questions\n\nContact Ana Torres for policy questions.\n",
+  "payroll/pay-schedule-guide.md": "---\ntitle: Pay Schedule Guide\ntype: doc\nshare_level: company\ntopics: [pay-schedule]\nauthors: [ana-torres]\ncontains_personal_data: false\n---\n\n# Pay Schedule Guide\n\nOwner: Ana Torres\n\n## Supported frequencies\n\n- Weekly: 52 pay dates per year\n- Biweekly: 26 pay dates per year (most common)\n- Semimonthly: 24 pay dates per year, on the 15th and last day of the month\n\n## Cutoffs\n\nPayroll cutoff is 5:00 p.m. Eastern, two business days before the pay date. ClockLine sends the final approved hours file at cutoff. Changes after cutoff go into the next pay period.\n\n## Holidays\n\nIf a pay date falls on a bank holiday, the pay date moves to the previous business day and cutoff moves one business day earlier.\n\n## Off-cycle runs\n\nOff-cycle runs are allowed for terminations and corrections. They require approval from a payroll lead.\n",
+  "payroll/payroll-calculation-guide.md": "---\ntitle: Payroll Calculation Guide\ntype: doc\nshare_level: company\ntopics: [payroll-calculation, overtime-pay, tax-withholding]\nauthors: [maria-lopez, ana-torres]\ncontains_personal_data: false\n---\n\n# Payroll Calculation Guide\n\nOwner: Ana Torres · Last reviewed: September 2026 · System: PayCore\n\nThis guide describes how PayCore turns approved hours and earnings into net pay. It covers the standard gross-to-net sequence only. Corrections to prior pay periods are handled separately and are not covered here.\n\n## 1. Inputs\n\nPayCore receives three inputs each pay period:\n\n1. Approved hours from ClockLine (Time & Attendance), delivered as a nightly file and a final file at payroll cutoff.\n2. Earnings and deduction elections from BenHub (Benefits).\n3. Employee pay setup: pay rate, pay frequency, and tax profile.\n\n## 2. Pay frequency\n\nMost clients run biweekly payroll. Weekly and semimonthly schedules are supported. See the Pay Schedule Guide for cutoffs.\n\n## 3. Regular earnings\n\nRegular earnings equal regular hours multiplied by the base hourly rate. Salaried employees receive their period salary regardless of hours, unless they are non-exempt.\n\n## 4. Gross pay\n\n### 4.1 Earning types\n\nGross pay is the sum of regular earnings, overtime earnings, shift differentials, bonuses, and commissions for the period.\n\n### 4.2 Overtime in gross pay\n\nOvertime earnings are added to gross pay before any deductions are taken. Pre-tax benefit deductions are calculated on total gross pay, including overtime. Overtime premiums are calculated at 1.5 times the regular rate of pay for hours over 40 in a workweek, as defined in the Overtime Policy.\n\n### 4.3 Regular rate\n\nThe regular rate includes non-discretionary bonuses and shift differentials. When a bonus covers several workweeks, PayCore allocates it across those weeks before computing the overtime premium.\n\n## 5. Deductions\n\n### 5.1 Order of deductions\n\n1. Pre-tax deductions (medical, dental, vision premiums, HSA, FSA, pre-tax 401(k)).\n2. Taxes, calculated on taxable wages after pre-tax deductions.\n3. Post-tax deductions (Roth 401(k), voluntary life, garnishments).\n\n### 5.2 Deduction amounts\n\nDeduction amounts come from BenHub. PayCore does not decide whether an employee is eligible for a benefit; it applies the elections BenHub sends.\n\n## 6. Taxes\n\nSee the Tax Withholding Guide for federal, state, and local withholding rules.\n\n## 7. Net pay\n\nNet pay equals gross pay minus all deductions and taxes. If net pay would be negative, PayCore stops the check and creates a payroll exception for review.\n\n## 8. Exceptions\n\nPayroll exceptions appear on the exceptions dashboard. Common exceptions: missing tax profile, negative net pay, hours over 80 in a single week, and missing pay rate. Exceptions must be cleared before payroll cutoff.\n",
+  "payroll/payroll-faq.md": "---\ntitle: Payroll FAQ\ntype: doc\nshare_level: company\ntopics: [pto-payout, pay-schedule, payroll-calculation]\nauthors: [ana-torres]\ncontains_personal_data: false\n---\n\n# Payroll FAQ\n\nNote: some answers below have not been reviewed since 2024.\n\n**When is unused PTO paid out after an employee leaves?**\nUnused PTO is paid on the employee's final paycheck, issued in an off-cycle run on the last day of work.\n\n**Can an employee change their direct deposit mid-period?**\nYes. Changes made before cutoff apply to the current period.\n\n**Why does an employee's overtime look different on their pay statement than in ClockLine?**\nPayCore shows overtime pay, not overtime hours. Divide by 1.5 times the regular rate to compare.\n\n**Do we still support paper checks?**\nYes, but they are being phased out in 2024. (Outdated: paper checks are still supported as of 2026.)\n\n**How do I correct last period's overtime?**\nContact the payroll help channel.\n\n**What is the cutoff time?**\nCutoff is 3:00 p.m. Eastern. (Outdated: cutoff moved to 5:00 p.m. Eastern. See the Pay Schedule Guide.)\n",
+  "payroll/payroll-meeting-notes.md": "---\ntitle: Payroll team sync notes (Sept–Oct 2026)\ntype: meeting\nshare_level: cross_team\ntopics: [pto-payout, retro-pay-overtime, eligibility-rules-engine]\nauthors: [ana-torres]\ncontains_personal_data: false\n---\n\n# Payroll team sync notes\n\n## Sep 22, 2026\n\nAttendees: Ana Torres, Raj Patel, Maria Lopez\n\n- Room moved to 4B next week, calendar invite updated.\n- Raj: the eligibility rules engine is going into sprint 42. Needs someone who understands benefits waiting periods.\n- Maria: reminded everyone the retro pay worksheet is still manual. No owner besides her.\n- Lunch order for the offsite: tacos won.\n\n## Oct 6, 2026\n\nAttendees: Ana Torres, Raj Patel, Maria Lopez\n\n- Discussed PTO payout timing after a support ticket. Maria said the current practice is to pay unused PTO on the next regular pay date after termination, not in a same-day off-cycle run, unless state law requires immediate payment. Ana thought the FAQ says final paycheck on the last day. Not resolved; Ana to follow up.\n- Raj out Friday.\n- Q4 tax table load is on track.\n\n## Oct 16, 2026\n\nAttendees: Ana Torres, Raj Patel\n\n- Maria gave notice; last day is Oct 31. Ana to plan knowledge handoff.\n- Sprint 42 in progress.\n- Reminder: expense reports due Friday.\n",
+  "payroll/retro-pay-chat-notes.md": "---\ntitle: Retro pay questions (chat notes)\ntype: expert_answer\nshare_level: cross_team\ntopics: [retro-pay-overtime]\nauthors: [maria-lopez]\ncontains_personal_data: false\n---\n\n# Retro pay questions (copied from the #payroll-help channel)\n\nThese are informal notes copied from team chat. They are not reviewed documentation.\n\n---\n\n**Mar 4** · Question from the support desk: a client's rate increase was entered late and is now effective three pay periods back. Do we redo overtime too?\n\n**Maria Lopez:** Yes. When a rate change is backdated, the overtime premium for every affected week has to be recalculated at the new regular rate. People forget this. I run the retro calc week by week, not for the whole period at once.\n\n---\n\n**May 19** · Question from Raj: why don't we just compute the retro amount as rate difference times total hours?\n\n**Maria Lopez:** Because overtime hours need the 1.5x premium applied to the difference. Rate difference times total hours underpays anyone with overtime in those weeks. I handle those manually in the retro worksheet.\n\n---\n\n**Jul 22** · Question from a new analyst: where is the retro pay process written down?\n\n**Maria Lopez:** It isn't, honestly. Ask me and I'll walk you through it. I keep meaning to write it up.\n\n---\n\n**Aug 30** · Question from the support desk: retro correction for a timesheet that was fixed after payroll closed. Overtime changed from 2 to 6 hours.\n\n**Maria Lopez:** Pay the 4 extra overtime hours in the next regular run as a retro earning, coded RETRO-OT so it shows separately on the pay statement. Don't reopen the closed period.\n",
+  "payroll/roadmap.md": "---\ntitle: Payroll Product Roadmap (FY27)\ntype: doc\nshare_level: cross_team\ntopics: [payroll-ot-calculator, eligibility-rules-engine]\nauthors: [raj-patel]\ncontains_personal_data: false\n---\n\n# Payroll Product Roadmap (FY27)\n\nOwner: Raj Patel · Updated: October 2026\n\n## Q4 2026\n\n- Eligibility rules engine, phase 1 (sprint 42–44)\n- 2027 tax table load\n- Exceptions dashboard fixes\n\n## Q1 2027\n\n- **Build an overtime calculator in PayCore.** Today PayCore takes overtime hours from ClockLine and only applies the rate. We plan to build our own overtime calculator so PayCore can compute weekly and daily overtime from raw hours, handle state rules, and stop depending on ClockLine's overtime split. Estimate: 3 sprints.\n- Pay statement redesign\n\n## Q2 2027\n\n- Retro pay automation (currently a manual worksheet)\n- Multi-state tax reciprocity improvements\n\n## Parking lot\n\n- Real-time earned wage access\n- Bonus allocation UI\n",
+  "payroll/sprint-42-plan.md": "---\ntitle: Payroll Engineering · Sprint 42 plan\ntype: doc\nshare_level: cross_team\ntopics: [eligibility-rules-engine]\nauthors: [raj-patel]\ncontains_personal_data: false\n---\n\n# Payroll Engineering · Sprint 42 plan\n\nSprint dates: Oct 13 – Oct 24, 2026 · Lead: Raj Patel\n\n## Sprint goal\n\nStart the eligibility rules engine and close out the exceptions dashboard bugs.\n\n## Committed work\n\n### 1. Eligibility rules engine (new)\n\nPayCore needs to know which earnings and deductions an employee is eligible for before calculating pay, instead of trusting every election from upstream. This sprint we start an eligibility rules engine that evaluates employee eligibility from hours worked, employment status, and waiting periods.\n\n- Define the rule format (JSON rules, evaluated per employee per period)\n- Build evaluation for hours-based eligibility (average weekly hours)\n- Wire the engine into the pre-deduction step behind a feature flag\n\nEstimate: 13 points. Owner: Raj Patel.\n\n### 2. Exceptions dashboard fixes\n\n- Negative net pay exception shows the wrong period (3 points)\n- Sorting by client name is broken (1 point)\n\n### 3. Tax table update\n\n- Load 2027 federal withholding tables in staging (2 points)\n\n## Not committed\n\n- Overtime calculator (see roadmap, Q1 2027)\n- Pay statement redesign\n\n## Risks\n\n- Eligibility rules need input from someone who knows benefits waiting periods. We have not found a contact yet.\n",
+  "payroll/tax-withholding-guide.md": "---\ntitle: Tax Withholding Guide\ntype: doc\nshare_level: company\ntopics: [tax-withholding]\nauthors: [maria-lopez]\ncontains_personal_data: false\n---\n\n# Tax Withholding Guide\n\nOwner: Payroll · Entry type: regulation\n\n## Federal income tax\n\nPayCore calculates federal income tax using the employee's current W-4 elections and the IRS percentage method tables for the pay frequency.\n\n## Social Security and Medicare\n\nSocial Security is withheld at 6.2% up to the annual wage base. Medicare is withheld at 1.45% on all wages, plus an additional 0.9% on wages over $200,000 in the calendar year.\n\n## Pre-tax deductions\n\nSection 125 deductions (medical, dental, vision, FSA, HSA through payroll) reduce wages for federal income tax, Social Security, and Medicare. Pre-tax 401(k) reduces wages for federal income tax only.\n\n## Supplemental wages\n\nBonuses and retro earnings paid separately may use the 22% flat supplemental rate.\n\n## State and local\n\nState withholding uses the work location's state rules. Reciprocity agreements are applied when the employee lives and works in different states.\n",
+  "time/integrations-overview.md": "---\ntitle: Time data feeds to Payroll and Benefits\ntype: doc\nshare_level: cross_team\ntopics: [time-integrations]\nauthors: [sam-okafor]\ncontains_personal_data: false\n---\n\n# Time data feeds\n\nOwner: Sam Okafor\n\n## To Payroll (PayCore)\n\nNightly preliminary file plus a final file at payroll cutoff. Hours are split by workweek into regular, overtime, and double time.\n\n## To Benefits (BenHub)\n\nOne file per biweekly period with scheduled hours and overtime hours as biweekly totals per employee. BenHub does not receive per-workweek detail.\n\n## Corrections\n\nTimesheet edits after cutoff are sent in the next file as adjustments to the prior period.\n",
+  "time/overtime-calculator-design.md": "---\ntitle: Design doc · ClockLine overtime calculator\ntype: doc\nshare_level: cross_team\ntopics: [overtime-calculator, overtime-pay]\nauthors: [sam-okafor]\ncontains_personal_data: false\n---\n\n# Design doc · ClockLine overtime calculator\n\nAuthor: Sam Okafor · Status: Shipped (June 2026)\n\n## Summary\n\nClockLine has a built-in overtime calculator. It computes weekly overtime, state daily overtime, and double time from raw punches, and it is in production for all clients as of June 2026.\n\n## What it does\n\n- Splits each workweek's hours into regular, overtime, and double time\n- Applies state daily overtime rules (for example, over 8 hours in a day)\n- Never pays daily and weekly overtime for the same hour\n- Handles configurable workweek start days\n\n## Interface\n\nThe calculator is exposed as an internal API: `POST /overtime/calculate` with raw punches for a workweek, returning the regular/overtime/double-time split. Any team can call it. Today only ClockLine's own export uses it.\n\n## Tests\n\n1,800 rule test cases covering all 50 states.\n\n## Owner\n\nSam Okafor. Product: Chloe Reyes.\n",
+  "time/pto-accrual-guide.md": "---\ntitle: PTO Accrual Guide\ntype: doc\nshare_level: company\ntopics: [pto-accrual]\nauthors: [chloe-reyes]\ncontains_personal_data: false\n---\n\n# PTO Accrual Guide\n\n## Accrual rate\n\nDefault accrual is 1 hour of PTO per 30 hours worked. Clients can configure tiers by tenure.\n\n## Cap\n\nAccrual stops when the balance reaches the cap (default 120 hours) and resumes when the balance drops below it.\n\n## Overtime\n\nOvertime hours accrue PTO at the same rate as regular hours.\n",
+  "time/rounding-rules.md": "---\ntitle: Punch Rounding Rules\ntype: doc\nshare_level: cross_team\ntopics: [overtime-rounding, timekeeping]\nauthors: [sam-okafor]\ncontains_personal_data: false\n---\n\n# Punch Rounding Rules\n\nOwner: Sam Okafor\n\n## Current rule\n\nClockLine rounds each punch to the nearest 6 minutes (one tenth of an hour). A punch at 8:02 rounds to 8:00; a punch at 8:04 rounds to 8:06.\n\n## Neutrality\n\nRounding must be neutral over time: it cannot consistently favor the employer.\n\n## Effect on overtime\n\nRounded punches are the hours used for the overtime calculator and for the hours files sent to Payroll and Benefits. Any change to the rounding interval changes overtime hours downstream.\n\n## Proposed change (under discussion)\n\nProduct has proposed rounding to the nearest 15 minutes instead of 6, to match a large client's policy. No decision yet.\n",
+  "time/scheduling-guide.md": "---\ntitle: Scheduling Guide\ntype: doc\nshare_level: company\ntopics: [scheduling]\nauthors: [chloe-reyes]\ncontains_personal_data: false\n---\n\n# Scheduling Guide\n\n## Scheduled hours\n\nManagers publish schedules at least 7 days in advance. Scheduled hours are sent to Benefits each biweekly period alongside worked hours.\n\n## Shift swaps\n\nEmployees may swap shifts with manager approval in the ClockLine app.\n",
+  "time/time-faq.md": "---\ntitle: Time & Attendance FAQ\ntype: doc\nshare_level: company\ntopics: [timekeeping, pto-accrual]\nauthors: [sam-okafor]\ncontains_personal_data: false\n---\n\n# Time & Attendance FAQ\n\n**Can employees edit their own punches after submitting a timesheet?**\nNo. After submission, only a manager can edit punches, and the edit requires re-approval.\n\n**Does PTO accrue during unpaid leave?**\nNo.\n\n**What happens to missed punches?**\nThe timesheet is flagged and the manager must add the punch before approval.\n",
+  "time/time-meeting-notes.md": "---\ntitle: Time team sync notes (Oct 2026)\ntype: meeting\nshare_level: cross_team\ntopics: [overtime-calculator, overtime-rounding]\nauthors: [chloe-reyes]\ncontains_personal_data: false\n---\n\n# Time team sync notes\n\n## Oct 9, 2026\n\nAttendees: Sam Okafor, Chloe Reyes\n\n- Holiday party planning: Chloe volunteers.\n- Large client asked for 15-minute rounding. Sam to scope a spike.\n- Sam: the overtime calculator API has been stable since June; nobody outside ClockLine calls it yet.\n\n## Oct 15, 2026\n\nAttendees: Sam Okafor, Chloe Reyes, Jordan Kim\n\n- Welcome Jordan.\n- Jordan's ramp-up needs Payroll and Benefits context; ask their teams.\n- Printer on 3 is broken again.\n",
+  "time/time-sprint-plan.md": "---\ntitle: Time & Attendance · Sprint plan (Oct 13–24)\ntype: doc\nshare_level: cross_team\ntopics: [overtime-rounding, scheduling]\nauthors: [chloe-reyes]\ncontains_personal_data: false\n---\n\n# Time & Attendance · Sprint plan (Oct 13–24)\n\n## Committed\n\n1. Rounding interval configuration (spike): evaluate supporting 15-minute rounding per client (Sam Okafor, 5 points)\n2. Shift swap notifications (3 points)\n3. Onboard Jordan Kim: ramp-up across Payroll and Benefits dependencies\n\n## Not committed\n\n- Overtime calculator v2 (multi-state workers)\n",
+  "time/timekeeping-policy.md": "---\ntitle: Timekeeping Policy\ntype: doc\nshare_level: company\ntopics: [timekeeping]\nauthors: [sam-okafor, chloe-reyes]\ncontains_personal_data: false\n---\n\n# Timekeeping Policy\n\n## Punches\n\nEmployees punch in and out through the ClockLine app, web clock, or a physical terminal. Meal breaks of 30 minutes or more are unpaid and require punches.\n\n## Timesheet approval\n\nManagers approve timesheets by payroll cutoff. Unapproved time is not sent to Payroll.\n\n## Edits\n\nEdits after approval require manager re-approval and create an audit record.\n"
+ },
+ "entries": [
+  {
+   "answer": {
+    "caveats": [
+     "The deduction amount itself is fixed per period; overtime changes the base it is taken from, not the amount."
+    ],
+    "steps": [],
+    "summary": "Yes. Overtime earnings are added to gross pay first, and pre-tax benefit deductions are calculated on total gross pay, including overtime."
+   },
+   "entry_type": "process",
+   "key": "ot-gross-pretax",
+   "question": "Is overtime included in gross pay before pre-tax benefit deductions are calculated?",
+   "share_level": "cross_team",
+   "sources": [
+    {
+     "doc": "payroll/payroll-calculation-guide.md",
+     "quote": "Pre-tax benefit deductions are calculated on total gross pay, including overtime."
+    }
+   ],
+   "status": "approved",
+   "team_id": "payroll",
+   "topic_id": "overtime-pay",
+   "verified_at": "2026-10-17",
+   "verified_by": "maria-lopez"
+  },
+  {
+   "answer": {
+    "caveats": [
+     "Paid time off does count as eligible hours."
+    ],
+    "steps": [],
+    "summary": "No. Benefits eligibility uses scheduled hours, not overtime hours."
+   },
+   "entry_type": "process",
+   "key": "elig-scheduled-hours",
+   "question": "Do overtime hours count toward benefits eligibility?",
+   "share_level": "cross_team",
+   "sources": [
+    {
+     "doc": "benefits/eligibility-rules.md",
+     "quote": "Benefits eligibility uses scheduled hours, not overtime hours."
+    }
+   ],
+   "status": "approved",
+   "team_id": "benefits",
+   "topic_id": "benefits-eligibility",
+   "verified_at": "2026-09-30",
+   "verified_by": "marcus-hill"
+  },
+  {
+   "answer": {
+    "caveats": [],
+    "steps": [],
+    "summary": "On the employee's final paycheck, issued in an off-cycle run on the last day of work."
+   },
+   "entry_type": "process",
+   "key": "pto-payout-final-check",
+   "question": "When is unused PTO paid out after an employee leaves?",
+   "share_level": "cross_team",
+   "sources": [
+    {
+     "doc": "payroll/payroll-faq.md",
+     "quote": "Unused PTO is paid on the employee's final paycheck, issued in an off-cycle run on the last day of work."
+    }
+   ],
+   "status": "approved",
+   "team_id": "payroll",
+   "topic_id": "pto-payout",
+   "verified_at": "2026-07-08",
+   "verified_by": "ana-torres"
+  },
+  {
+   "answer": {
+    "caveats": [
+     "States that require immediate final pay override this."
+    ],
+    "steps": [],
+    "summary": "Unused PTO is paid on the next regular pay date after termination, not in a same-day off-cycle run, unless state law requires immediate payment."
+   },
+   "entry_type": "process",
+   "key": "pto-payout-next-regular",
+   "question": "What is the timing for paying out unused PTO at termination?",
+   "share_level": "cross_team",
+   "sources": [
+    {
+     "doc": "payroll/payroll-meeting-notes.md",
+     "quote": "pay unused PTO on the next regular pay date after termination, not in a same-day off-cycle run, unless state law requires immediate payment"
+    }
+   ],
+   "status": "approved",
+   "team_id": "payroll",
+   "topic_id": "pto-payout",
+   "verified_at": "2026-10-06",
+   "verified_by": "maria-lopez"
+  },
+  {
+   "answer": {
+    "caveats": [],
+    "steps": [],
+    "summary": "No. After submission, only a manager can edit punches, and the edit requires re-approval."
+   },
+   "entry_type": "process",
+   "key": "time-punch-edits-expired",
+   "question": "Can employees edit their own punches after submitting a timesheet?",
+   "share_level": "company",
+   "sources": [
+    {
+     "doc": "time/time-faq.md",
+     "quote": "After submission, only a manager can edit punches, and the edit requires re-approval."
+    }
+   ],
+   "status": "expired",
+   "team_id": "time",
+   "topic_id": "timekeeping",
+   "verified_at": "2026-02-17",
+   "verified_by": "sam-okafor"
+  },
+  {
+   "answer": {
+    "caveats": [
+     "Some states also require daily overtime."
+    ],
+    "steps": [],
+    "summary": "Per workweek. Hours are never averaged across two weeks, even when the pay period is biweekly."
+   },
+   "entry_type": "regulation",
+   "key": "ot-weekly",
+   "question": "Is overtime calculated per week or per pay period?",
+   "share_level": "cross_team",
+   "sources": [
+    {
+     "doc": "payroll/overtime-policy.md",
+     "quote": "Overtime is calculated weekly."
+    }
+   ],
+   "status": "approved",
+   "team_id": "payroll",
+   "topic_id": "overtime-pay",
+   "verified_at": "2026-08-12",
+   "verified_by": "maria-lopez"
+  }
+ ],
+ "people": [
+  {
+   "id": "maria-lopez",
+   "is_departing": true,
+   "is_knowledge_owner": false,
+   "name": "Maria Lopez",
+   "role": "expert",
+   "team_id": "payroll",
+   "title": "Senior Payroll Specialist"
+  },
+  {
+   "id": "raj-patel",
+   "is_departing": false,
+   "is_knowledge_owner": false,
+   "name": "Raj Patel",
+   "role": "lead",
+   "team_id": "payroll",
+   "title": "Engineering Lead"
+  },
+  {
+   "id": "ana-torres",
+   "is_departing": false,
+   "is_knowledge_owner": true,
+   "name": "Ana Torres",
+   "role": "lead",
+   "team_id": "payroll",
+   "title": "Knowledge Owner"
+  },
+  {
+   "id": "priya-nair",
+   "is_departing": false,
+   "is_knowledge_owner": true,
+   "name": "Priya Nair",
+   "role": "lead",
+   "team_id": "benefits",
+   "title": "Team Lead"
+  },
+  {
+   "id": "marcus-hill",
+   "is_departing": false,
+   "is_knowledge_owner": false,
+   "name": "Marcus Hill",
+   "role": "expert",
+   "team_id": "benefits",
+   "title": "Eligibility Engineer"
+  },
+  {
+   "id": "lena-park",
+   "is_departing": false,
+   "is_knowledge_owner": false,
+   "name": "Lena Park",
+   "role": "member",
+   "team_id": "benefits",
+   "title": "Scrum Master"
+  },
+  {
+   "id": "sam-okafor",
+   "is_departing": false,
+   "is_knowledge_owner": true,
+   "name": "Sam Okafor",
+   "role": "lead",
+   "team_id": "time",
+   "title": "Engineering Lead"
+  },
+  {
+   "id": "jordan-kim",
+   "is_departing": false,
+   "is_knowledge_owner": false,
+   "name": "Jordan Kim",
+   "role": "member",
+   "team_id": "time",
+   "title": "Software Engineer"
+  },
+  {
+   "id": "chloe-reyes",
+   "is_departing": false,
+   "is_knowledge_owner": false,
+   "name": "Chloe Reyes",
+   "role": "expert",
+   "team_id": "time",
+   "title": "Product Manager"
+  }
+ ],
+ "teams": [
+  {
+   "accent_color": "#2E3A6E",
+   "capability_card": {
+    "contacts": [
+     {
+      "for": "knowledge questions and access requests",
+      "person_id": "ana-torres"
+     },
+     {
+      "for": "PayCore engineering and roadmap",
+      "person_id": "raj-patel"
+     }
+    ],
+    "owned_topics": [
+     "payroll-calculation",
+     "overtime-pay",
+     "retro-pay-overtime",
+     "pto-payout",
+     "tax-withholding",
+     "pay-schedule"
+    ],
+    "summary": "Owns gross-to-net pay calculation, overtime pay, retro pay, tax withholding, PTO payout, and the pay calendar."
+   },
+   "default_share_level": "cross_team",
+   "id": "payroll",
+   "name": "Payroll"
+  },
+  {
+   "accent_color": "#0D9488",
+   "capability_card": {
+    "contacts": [
+     {
+      "for": "knowledge questions and access requests",
+      "person_id": "priya-nair"
+     },
+     {
+      "for": "eligibility logic and BenHub engineering",
+      "person_id": "marcus-hill"
+     }
+    ],
+    "owned_topics": [
+     "benefits-eligibility",
+     "pre-tax-deductions",
+     "open-enrollment",
+     "cobra",
+     "vendor-contracts",
+     "eligibility-service"
+    ],
+    "summary": "Owns benefits eligibility, pre-tax deductions, open enrollment, COBRA continuation, and benefits vendor relationships."
+   },
+   "default_share_level": "cross_team",
+   "id": "benefits",
+   "name": "Benefits"
+  },
+  {
+   "accent_color": "#7C3AED",
+   "capability_card": {
+    "contacts": [
+     {
+      "for": "ClockLine engineering and integrations",
+      "person_id": "sam-okafor"
+     },
+     {
+      "for": "product decisions and roadmap",
+      "person_id": "chloe-reyes"
+     }
+    ],
+    "owned_topics": [
+     "timekeeping",
+     "overtime-rounding",
+     "overtime-calculator",
+     "pto-accrual",
+     "scheduling",
+     "time-integrations"
+    ],
+    "summary": "Owns time capture, punch rounding, overtime hour calculation, PTO accrual, scheduling, and time data feeds to Payroll and Benefits."
+   },
+   "default_share_level": "cross_team",
+   "id": "time",
+   "name": "Time & Attendance"
+  }
+ ],
+ "topic_knowers": [
+  {
+   "person_id": "maria-lopez",
+   "role": "answerer",
+   "topic_id": "retro-pay-overtime"
+  },
+  {
+   "person_id": "maria-lopez",
+   "role": "author",
+   "topic_id": "payroll-calculation"
+  },
+  {
+   "person_id": "ana-torres",
+   "role": "author",
+   "topic_id": "payroll-calculation"
+  },
+  {
+   "person_id": "raj-patel",
+   "role": "cited",
+   "topic_id": "payroll-calculation"
+  },
+  {
+   "person_id": "maria-lopez",
+   "role": "author",
+   "topic_id": "overtime-pay"
+  },
+  {
+   "person_id": "ana-torres",
+   "role": "cited",
+   "topic_id": "overtime-pay"
+  },
+  {
+   "person_id": "sam-okafor",
+   "role": "cited",
+   "topic_id": "overtime-pay"
+  },
+  {
+   "person_id": "maria-lopez",
+   "role": "answerer",
+   "topic_id": "pto-payout"
+  },
+  {
+   "person_id": "ana-torres",
+   "role": "answerer",
+   "topic_id": "pto-payout"
+  },
+  {
+   "person_id": "maria-lopez",
+   "role": "author",
+   "topic_id": "tax-withholding"
+  },
+  {
+   "person_id": "ana-torres",
+   "role": "author",
+   "topic_id": "pay-schedule"
+  },
+  {
+   "person_id": "raj-patel",
+   "role": "cited",
+   "topic_id": "pay-schedule"
+  },
+  {
+   "person_id": "maria-lopez",
+   "role": "cited",
+   "topic_id": "pay-schedule"
+  },
+  {
+   "person_id": "raj-patel",
+   "role": "author",
+   "topic_id": "eligibility-rules-engine"
+  },
+  {
+   "person_id": "raj-patel",
+   "role": "author",
+   "topic_id": "payroll-ot-calculator"
+  },
+  {
+   "person_id": "marcus-hill",
+   "role": "author",
+   "topic_id": "benefits-eligibility"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "author",
+   "topic_id": "benefits-eligibility"
+  },
+  {
+   "person_id": "lena-park",
+   "role": "cited",
+   "topic_id": "benefits-eligibility"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "author",
+   "topic_id": "pre-tax-deductions"
+  },
+  {
+   "person_id": "marcus-hill",
+   "role": "cited",
+   "topic_id": "pre-tax-deductions"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "author",
+   "topic_id": "open-enrollment"
+  },
+  {
+   "person_id": "lena-park",
+   "role": "author",
+   "topic_id": "open-enrollment"
+  },
+  {
+   "person_id": "marcus-hill",
+   "role": "cited",
+   "topic_id": "open-enrollment"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "answerer",
+   "topic_id": "cobra"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "author",
+   "topic_id": "vendor-contracts"
+  },
+  {
+   "person_id": "marcus-hill",
+   "role": "author",
+   "topic_id": "eligibility-service"
+  },
+  {
+   "person_id": "priya-nair",
+   "role": "cited",
+   "topic_id": "eligibility-service"
+  },
+  {
+   "person_id": "sam-okafor",
+   "role": "author",
+   "topic_id": "timekeeping"
+  },
+  {
+   "person_id": "chloe-reyes",
+   "role": "author",
+   "topic_id": "timekeeping"
+  },
+  {
+   "person_id": "jordan-kim",
+   "role": "cited",
+   "topic_id": "timekeeping"
+  },
+  {
+   "person_id": "sam-okafor",
+   "role": "author",
+   "topic_id": "overtime-rounding"
+  },
+  {
+   "person_id": "chloe-reyes",
+   "role": "cited",
+   "topic_id": "overtime-rounding"
+  },
+  {
+   "person_id": "sam-okafor",
+   "role": "author",
+   "topic_id": "overtime-calculator"
+  },
+  {
+   "person_id": "chloe-reyes",
+   "role": "cited",
+   "topic_id": "overtime-calculator"
+  },
+  {
+   "person_id": "jordan-kim",
+   "role": "cited",
+   "topic_id": "overtime-calculator"
+  },
+  {
+   "person_id": "chloe-reyes",
+   "role": "author",
+   "topic_id": "pto-accrual"
+  },
+  {
+   "person_id": "chloe-reyes",
+   "role": "author",
+   "topic_id": "scheduling"
+  },
+  {
+   "person_id": "sam-okafor",
+   "role": "author",
+   "topic_id": "time-integrations"
+  }
+ ],
+ "topics": [
+  {
+   "co_owner_team_ids": [],
+   "id": "payroll-calculation",
+   "name": "Gross-to-net calculation",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [
+    "time",
+    "benefits"
+   ],
+   "id": "overtime-pay",
+   "name": "Overtime pay",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "retro-pay-overtime",
+   "name": "Retro pay corrections with overtime",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "pto-payout",
+   "name": "PTO payout at termination",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "tax-withholding",
+   "name": "Tax withholding",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "pay-schedule",
+   "name": "Pay calendar and cutoffs",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "eligibility-rules-engine",
+   "name": "Eligibility rules engine (Payroll build)",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "payroll-ot-calculator",
+   "name": "Overtime calculator (Payroll roadmap)",
+   "team_id": "payroll"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "benefits-eligibility",
+   "name": "Benefits eligibility",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [
+    "payroll"
+   ],
+   "id": "pre-tax-deductions",
+   "name": "Pre-tax deductions",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "open-enrollment",
+   "name": "Open enrollment",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "cobra",
+   "name": "COBRA continuation",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "vendor-contracts",
+   "name": "Benefits vendor contracts",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "eligibility-service",
+   "name": "New eligibility service",
+   "team_id": "benefits"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "timekeeping",
+   "name": "Punches and timesheets",
+   "team_id": "time"
+  },
+  {
+   "co_owner_team_ids": [
+    "payroll"
+   ],
+   "id": "overtime-rounding",
+   "name": "Punch rounding",
+   "team_id": "time"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "overtime-calculator",
+   "name": "Overtime calculator",
+   "team_id": "time"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "pto-accrual",
+   "name": "PTO accrual",
+   "team_id": "time"
+  },
+  {
+   "co_owner_team_ids": [],
+   "id": "scheduling",
+   "name": "Scheduling",
+   "team_id": "time"
+  },
+  {
+   "co_owner_team_ids": [
+    "payroll",
+    "benefits"
+   ],
+   "id": "time-integrations",
+   "name": "Time data feeds",
+   "team_id": "time"
+  }
+ ]
+}

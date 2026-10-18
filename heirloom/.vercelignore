@@ -1,10 +1,9 @@
-# The API project deploys only api/, services/api, and db/seed. The web app is a separate Vercel project.
-apps/
+# Vercel Services builds apps/web and services/api; nothing else is needed at runtime.
 brag-output*/
 docs/
 .data/
 **/node_modules/
+**/.next/
 services/api/.venv/
 services/api/tests/
 services/team-agent/
-*.md

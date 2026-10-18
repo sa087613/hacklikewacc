@@ -43,21 +43,30 @@ After switching the database or embeddings provider, reseed: `cd services/api &&
 
 Agents talk in-process by default. Set `AGENT_TRANSPORT=mcp` to run every agent call through a per-team MCP server over stdio (`services/team-agent/server.py`, one per `TEAM_ID`).
 
-## Deploy to Vercel
+## Deploy to Vercel (Services)
 
-Heirloom is two Vercel projects from the same repo: the website and the API. Deploy the API first.
+One Vercel project serves both apps on one domain (`heirloom/vercel.json`): the Next.js site at `/` and the FastAPI backend at `/api`.
 
-**1. API project**
-- New Project → import the repo → **Root Directory: `heirloom`** → Framework Preset: **Other**. (`heirloom/vercel.json` and `api/index.py` serve the FastAPI backend as one Python function.)
-- **Storage** tab → add **Neon** (free Postgres). It sets `DATABASE_URL` for you. The first request creates the tables and loads the demo data.
-- Environment variables: `ANTHROPIC_API_KEY`, and `WEB_ORIGIN=https://<your-web-project>.vercel.app` (comma-separate several origins).
-- Check `https://<api-project>.vercel.app/health`: `providers.database` should say `postgres` and `providers.llm` should say `claude`.
+1. New Project → import the repo → **Root Directory: `heirloom`**. Vercel reads the `services` in `vercel.json`. If it asks for a Framework Preset, choose **Services**.
+2. Add the environment variables below, then deploy.
+3. Check `https://<project>.vercel.app/api/health`.
 
-**2. Web project**
-- New Project → same repo → **Root Directory: `heirloom/apps/web`** → Framework: Next.js.
-- Environment variable: `NEXT_PUBLIC_API_URL=https://<api-project>.vercel.app`, then **redeploy**. Next.js bakes this value in at build time.
+On Vercel the API never writes to disk and never starts subprocesses:
+- Agents always run in-process (any `AGENT_TRANSPORT=mcp` is ignored). MCP mode still works locally.
+- Seed data ships inside the API (`services/api/seed_bundle.json`, built from `db/seed` by `scripts/build_seed_bundle.py`) and loads into memory on the first request.
+- Without `DATABASE_URL` the database is in-memory SQLite, per instance: data resets when an instance recycles, and parallel instances don't share state. Add `DATABASE_URL` (Neon from the Storage tab) for data that persists and is shared.
+- Uploads are kept in memory unless Supabase Storage is configured.
 
-Without a database the API still runs, but each serverless instance keeps its own throwaway SQLite copy, so multi-step demos can reset mid-way. On Vercel, live agent edges on the Network screen need the question and the stream to hit the same instance; the audit log is always correct.
+| Variable | Needed? | What it does |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | Recommended | Claude writes answers. Without it, the scripted offline mock answers. |
+| `DATABASE_URL` | Recommended | Postgres (e.g. Neon via Storage, which sets it for you). Without it: in-memory SQLite per instance. |
+| `OPENAI_API_KEY` | Optional | Embeddings for search and Whisper for voice notes. Without it: keyword search, typed transcripts. |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Optional | Keep uploaded files in Supabase Storage. Without them: in memory. |
+| `ANTHROPIC_MODEL` | Optional | Defaults to `claude-opus-5-5`. |
+| `DEMO_MODE` | Optional | Defaults to `true` (2-minute expert timeouts, "Run standup now", demo reset). |
+
+Not needed on Vercel: `NEXT_PUBLIC_API_URL` (defaults to `/api` on the same domain), `WEB_ORIGIN` (same origin, so no CORS), `AGENT_TRANSPORT` (ignored), `SUPABASE_ANON_KEY` (unused). `VERCEL` is set by Vercel itself.
 
 ## Demo script (§15)
 

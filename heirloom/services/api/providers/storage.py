@@ -4,6 +4,18 @@ import httpx
 from config import settings
 
 
+class MemoryStorage:
+    """Vercel without Supabase: uploads are kept in memory for the life of the instance (no disk writes)."""
+
+    name = "memory"
+    live = False
+    files: dict = {}
+
+    def upload(self, path: str, data: bytes, content_type: str) -> str:
+        self.files[path] = (data, content_type)
+        return f"memory:{path}"
+
+
 class LocalStorage:
     name = "local"
     live = False

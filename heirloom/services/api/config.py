@@ -10,7 +10,8 @@ from typing import Dict, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT = Path(__file__).resolve().parents[2]  # heirloom/
+ROOT = Path(__file__).resolve().parents[2]  # heirloom/ (locally; on Vercel only services/api is deployed)
+ON_VERCEL = bool(os.environ.get("VERCEL"))  # set by Vercel in builds and functions
 
 _PLACEHOLDERS = ("YOUR-", "YOUR_", "REGION", "<", "xxxx")
 
@@ -39,11 +40,15 @@ class Settings(BaseSettings):
     embedding_dim: int = 1536
     transcription_model: str = "whisper-1"
     storage_bucket: str = "sources"
-    # Vercel's filesystem is read-only except /tmp.
-    data_dir: Path = Path("/tmp/heirloom") if os.environ.get("VERCEL") else ROOT / ".data"
+    data_dir: Path = ROOT / ".data"  # local SQLite file and uploads; never used on Vercel
 
-    # "inprocess" calls team agents directly; "mcp" launches one MCP server per team over stdio.
+    # "inprocess" calls team agents directly; "mcp" launches one MCP server per team over stdio
+    # (local dev only: on Vercel agents always run in-process, see effective_agent_transport).
     agent_transport: str = "inprocess"
+
+    # Path prefix the API is served under. Vercel Services forwards the full path ("/api/..."),
+    # so the backend mounts its routes under /api there; locally it serves from the root.
+    api_prefix: str = "/api" if ON_VERCEL else ""
 
     # §6 behavior rules
     demo_mode: bool = True
@@ -63,6 +68,16 @@ class Settings(BaseSettings):
         return self.database_url if is_real(self.database_url) else ""
 
     @property
+    def effective_agent_transport(self) -> str:
+        """No subprocesses or stdio MCP servers on Vercel, whatever AGENT_TRANSPORT says."""
+        return "inprocess" if ON_VERCEL else self.agent_transport
+
+    @property
+    def sqlite_in_memory(self) -> bool:
+        """On Vercel nothing is written to disk: SQLite lives in memory for the life of the instance."""
+        return ON_VERCEL
+
+    @property
     def timeout_minutes(self) -> int:
         return self.demo_expert_timeout_minutes if self.demo_mode else self.expert_timeout_minutes
 
@@ -80,8 +95,8 @@ class Settings(BaseSettings):
             "transcription": "whisper" if openai_live else "transcript",
             "storage": "supabase"
             if not off and is_real(self.supabase_url) and is_real(self.supabase_service_key)
-            else "local",
-            "agents": self.agent_transport,
+            else ("memory" if ON_VERCEL else "local"),
+            "agents": self.effective_agent_transport,
         }
 
     @property

@@ -2,13 +2,11 @@
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional
 
-import os
-
 import sqlalchemy as sa
 from sqlalchemy import event
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, StaticPool
 
-from config import settings
+from config import ON_VERCEL, settings
 from store.schema import metadata
 
 _engine: Optional[sa.Engine] = None
@@ -28,8 +26,11 @@ def engine() -> sa.Engine:
                     url = "postgresql+psycopg://" + url[len(prefix):]
             # prepare_threshold=None: Supabase's pooler does not support prepared statements.
             # Serverless instances are short-lived: open a connection per use instead of pooling.
-            pool = {"poolclass": NullPool} if os.environ.get("VERCEL") else {"pool_pre_ping": True}
+            pool = {"poolclass": NullPool} if ON_VERCEL else {"pool_pre_ping": True}
             _engine = sa.create_engine(url, connect_args={"prepare_threshold": None}, **pool)
+        elif settings.sqlite_in_memory:
+            # One shared in-memory database for every thread in this instance; nothing touches disk.
+            _engine = sa.create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
         else:
             settings.data_dir.mkdir(parents=True, exist_ok=True)
             _engine = sa.create_engine(
@@ -41,7 +42,8 @@ def engine() -> sa.Engine:
             def _pragmas(dbapi_conn, _):
                 cur = dbapi_conn.cursor()
                 cur.execute("PRAGMA foreign_keys=ON")
-                cur.execute("PRAGMA journal_mode=WAL")  # MCP agent processes share the file
+                if not settings.sqlite_in_memory:
+                    cur.execute("PRAGMA journal_mode=WAL")  # MCP agent processes share the file
                 cur.close()
 
     return _engine

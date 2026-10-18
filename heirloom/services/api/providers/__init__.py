@@ -35,9 +35,10 @@ def get_transcriber():
 
 @lru_cache(maxsize=1)
 def get_storage():
-    from providers.storage import LocalStorage, SupabaseStorage
+    from providers.storage import LocalStorage, MemoryStorage, SupabaseStorage
 
-    return SupabaseStorage() if settings.provider_status()["storage"] == "supabase" else LocalStorage()
+    kind = settings.provider_status()["storage"]
+    return SupabaseStorage() if kind == "supabase" else MemoryStorage() if kind == "memory" else LocalStorage()
 
 
 def reset() -> None:

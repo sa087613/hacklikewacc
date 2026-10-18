@@ -1,2 +1,0 @@
-# Vercel installs this for the API function (api/index.py).
--r services/api/requirements.txt

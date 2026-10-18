@@ -52,7 +52,7 @@ async def _bootstrap(request: Request, call_next):
     await run_in_threadpool(bootstrap.ensure_seeded)
     return await call_next(request)
 for r in (system, ask, network, inbox, knowledge_map, insights, people, sources):
-    app.include_router(r.router)
+    app.include_router(r.router, prefix=settings.api_prefix)
 
 
 @app.exception_handler(knowledge.PermissionDenied)

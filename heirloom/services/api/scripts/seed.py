@@ -10,18 +10,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import policy  # noqa: E402
-from config import ROOT, settings  # noqa: E402
+from config import settings  # noqa: E402
 from ingest import ingest_source, parse_file  # noqa: E402
 from knowledge import detect_conflicts, expiry_sweep  # noqa: E402
 from store import db  # noqa: E402
 from store.schema import (contributions, entry_sources, knowledge_entries, new_id, people, teams,  # noqa: E402
                           topic_knowers, topics)
 
-SEED = ROOT / "db" / "seed"
+# Seed data is read once into memory from the bundle shipped with the API (built from db/seed by
+# scripts/build_seed_bundle.py), so seeding needs no files beyond the deployed service.
+BUNDLE = json.loads((Path(__file__).resolve().parents[1] / "seed_bundle.json").read_text())
 
 
 def load(name):
-    return json.loads((SEED / name).read_text())
+    return BUNDLE[name.removesuffix(".json")]
 
 
 def seed(verbose: bool = True) -> dict:
@@ -40,12 +42,12 @@ def seed(verbose: bool = True) -> dict:
         conn.execute(topic_knowers.insert(), load("topic_knowers.json"))
 
         doc_ids, texts = {}, {}
-        for path in sorted((SEED / "docs").glob("*/*.md")):
-            rel = f"{path.parent.name}/{path.name}"
-            text, meta = parse_file(path.name, path.read_bytes())
+        for rel, raw in sorted(BUNDLE["docs"].items()):
+            team_id, filename = rel.split("/")
+            text, meta = parse_file(filename, raw.encode("utf-8"))
             result = ingest_source(
-                conn, team_id=path.parent.name, title=meta["title"], text=text, source_type=meta.get("type", "doc"),
-                share_level=meta.get("share_level"), storage_path=str(path.relative_to(ROOT)),
+                conn, team_id=team_id, title=meta["title"], text=text, source_type=meta.get("type", "doc"),
+                share_level=meta.get("share_level"), storage_path=f"db/seed/docs/{rel}",
                 topic_ids=meta.get("topics", []), meta=meta, label=meta.get("label"), author_ids=meta.get("authors", []),
             )
             doc_ids[rel], texts[rel] = result.source_id, text

@@ -119,7 +119,7 @@ class TeamAgent:
 # --------------------------------------------------------------------- transport
 
 def call_agent(team_id: str, tool: str, args: Dict):
-    if settings.agent_transport == "mcp":
+    if settings.effective_agent_transport == "mcp":
         from mcp_transport import call_tool
 
         return call_tool(team_id, tool, args)
