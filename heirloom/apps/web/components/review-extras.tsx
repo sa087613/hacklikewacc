@@ -2,8 +2,9 @@
 
 import { AlertTriangle, CalendarClock, Flag } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Pill } from "@/components/ui/pill";
 import { api, post, shortDate, timeAgo, type EntryView } from "@/lib/api";
 
 export type Conflict = { topic_id: string; topic: string; team_id: string; entries: EntryView[] };
@@ -37,43 +38,40 @@ function FlagCard({ f, onDone }: { f: FlagItem; onDone: (m: string) => void }) {
   };
 
   return (
-    <article className="rounded-card border border-status-critical/30 bg-surface">
-      <header className="flex items-center gap-2 border-b px-5 py-3 text-sm">
-        <Flag className="h-4 w-4 text-status-critical" />
-        <span className="font-semibold">Flagged as wrong</span>
-        <span className="text-muted">
+    <Card className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="bad">
+          <Flag className="h-3.5 w-3.5" aria-hidden /> Flagged as wrong
+        </Pill>
+        <span className="text-sm text-navy-600">
           by {f.flagged_by} · {timeAgo(f.created_at)}
         </span>
-      </header>
-      <div className="space-y-3 px-5 py-4 text-sm">
-        <p className="font-medium">{e?.question ?? f.answer?.question}</p>
-        <p className="text-muted">{e?.summary ?? f.answer?.lead}</p>
-        {f.reason && <p>&ldquo;{f.reason}&rdquo;</p>}
-        {editing && e && (
-          <div className="space-y-2">
-            <textarea value={summary} onChange={(x) => setSummary(x.target.value)} rows={3} aria-label="Corrected summary" className="w-full rounded-[6px] border px-3 py-2" />
-            <textarea value={steps} onChange={(x) => setSteps(x.target.value)} rows={3} aria-label="Steps, one per line" placeholder="Steps, one per line" className="w-full rounded-[6px] border px-3 py-2" />
-            <textarea value={caveats} onChange={(x) => setCaveats(x.target.value)} rows={2} aria-label="Caveats, one per line" placeholder="Caveats, one per line" className="w-full rounded-[6px] border px-3 py-2" />
-          </div>
-        )}
-        {error && <p className="text-status-critical">{error}</p>}
-        <div className="flex gap-2">
-          {e &&
-            (editing ? (
-              <Button size="sm" onClick={fix} disabled={!summary.trim()}>
-                Save correction and notify
-              </Button>
-            ) : (
-              <Button size="sm" onClick={() => setEditing(true)}>
-                Correct entry
-              </Button>
-            ))}
-          <Button size="sm" variant="secondary" onClick={() => post(`/flags/${f.id}/dismiss`).then(() => onDone("Flag dismissed."))}>
-            Dismiss
-          </Button>
-        </div>
       </div>
-    </article>
+      <p className="font-serif text-[22px] leading-snug">{e?.question ?? f.answer?.question}</p>
+      <p className="text-navy-600">{e?.summary ?? f.answer?.lead}</p>
+      {f.reason && <p>&ldquo;{f.reason}&rdquo;</p>}
+      {editing && e && (
+        <div className="space-y-2">
+          <textarea value={summary} onChange={(x) => setSummary(x.target.value)} rows={3} aria-label="Corrected summary" className="w-full rounded-btn border border-line px-4 py-3" />
+          <textarea value={steps} onChange={(x) => setSteps(x.target.value)} rows={3} aria-label="Steps, one per line" placeholder="Steps, one per line" className="w-full rounded-btn border border-line px-4 py-3" />
+          <textarea value={caveats} onChange={(x) => setCaveats(x.target.value)} rows={2} aria-label="Caveats, one per line" placeholder="Caveats, one per line" className="w-full rounded-btn border border-line px-4 py-3" />
+        </div>
+      )}
+      {error && <p className="text-pill-bad-fg">{error}</p>}
+      <div className="flex flex-wrap gap-2">
+        {e &&
+          (editing ? (
+            <Button onClick={fix} disabled={!summary.trim()}>
+              Save correction and notify
+            </Button>
+          ) : (
+            <Button onClick={() => setEditing(true)}>Correct entry</Button>
+          ))}
+        <Button variant="secondary" onClick={() => post(`/flags/${f.id}/dismiss`).then(() => onDone("Flag dismissed."))}>
+          Dismiss
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -92,43 +90,43 @@ export function ReviewExtras({
   return (
     <>
       {conflicts.map((c) => (
-        <article key={c.topic_id} className="rounded-card border border-status-warn/50 bg-status-warn/[.04]">
-          <header className="flex items-center gap-2 border-b px-5 py-3 text-sm">
-            <AlertTriangle className="h-4 w-4 text-status-warn" />
-            <span className="font-semibold">Conflicting answers · {c.topic}</span>
-            <span className="text-muted">Pick the one to keep. Heirloom never picks a winner.</span>
-          </header>
-          <div className="grid gap-3 p-4 md:grid-cols-2">
+        <Card key={c.topic_id} className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="warn">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Conflicting answers
+            </Pill>
+            <span className="font-semibold">{c.topic}</span>
+          </div>
+          <p className="text-navy-600">Pick the one to keep. Heirloom never picks a winner.</p>
+          <div className="grid gap-4 md:grid-cols-2">
             {c.entries.map((e) => (
-              <div key={e.id} className="space-y-2 rounded-[6px] border bg-surface p-3 text-sm">
-                <p className="font-medium">{e.question}</p>
+              <div key={e.id} className="space-y-3 rounded-[16px] bg-page p-5">
+                <p className="font-semibold">{e.question}</p>
                 <p>{e.summary}</p>
-                <p className="text-xs text-muted">
+                <p className="text-sm text-navy-600">
                   Verified by {e.verified_by} · {shortDate(e.verified_at)}
                 </p>
-                <Button size="sm" variant="secondary" onClick={() => post(`/entries/${e.id}/keep`).then(() => onDone("Conflict resolved. The other answer is retired."))}>
+                <Button variant="secondary" onClick={() => post(`/entries/${e.id}/keep`).then(() => onDone("Conflict resolved. The other answer is retired."))}>
                   Keep this answer
                 </Button>
               </div>
             ))}
           </div>
-        </article>
+        </Card>
       ))}
       {flags.map((f) => (
         <FlagCard key={f.id} f={f} onDone={onDone} />
       ))}
       {reconfirm.map((e) => (
-        <article key={e.id} className="flex flex-wrap items-center gap-3 rounded-card border bg-surface px-5 py-3 text-sm">
-          <CalendarClock className="h-4 w-4 text-status-warn" />
-          <div className="flex-1">
-            <p className="font-medium">{e.question}</p>
-            <p className="text-muted">{e.summary}</p>
+        <Card key={e.id} className="flex flex-wrap items-center gap-4">
+          <CalendarClock className="h-5 w-5 text-pill-warn-fg" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{e.question}</p>
+            <p className="text-navy-600">{e.summary}</p>
           </div>
-          <Badge status="warn">Needs re-confirmation · last verified {shortDate(e.verified_at)}</Badge>
-          <Button size="sm" onClick={() => post(`/entries/${e.id}/reconfirm`).then(() => onDone("Re-confirmed. Expiry reset."))}>
-            Re-confirm
-          </Button>
-        </article>
+          <Pill tone="warn">Needs re-confirmation · last verified {shortDate(e.verified_at)}</Pill>
+          <Button onClick={() => post(`/entries/${e.id}/reconfirm`).then(() => onDone("Re-confirmed. Expiry reset."))}>Re-confirm</Button>
+        </Card>
       ))}
     </>
   );
