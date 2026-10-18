@@ -1,71 +1,91 @@
-import { AlertTriangle, CheckCircle2, Clock, Info, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, CheckCircle2, Clock, Lock, Mail } from "lucide-react";
+import { Pill } from "@/components/ui/pill";
 import { shortDate, timeAgo, type Certainty, type Pending, TEAM_NAMES } from "@/lib/api";
 
 export function VerifiedBadge({ person, date }: { person: string; date: string | null }) {
   return (
-    <Badge status="good">
+    <Pill tone="ok">
       <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
       Verified by {person}
       {date ? ` · ${shortDate(date)}` : ""}
-    </Badge>
+    </Pill>
   );
 }
 
-const CERTAINTY: Record<Certainty, { label: string; status: "good" | "info" | "neutral" }> = {
-  expert_verified: { label: "Expert-verified", status: "good" },
-  documented: { label: "Documented", status: "info" },
-  no_documented_answer: { label: "No documented answer", status: "neutral" },
+const CERTAINTY: Record<Certainty, { label: string; tone: "ok" | "info" | "mute" }> = {
+  expert_verified: { label: "Expert verified", tone: "ok" },
+  documented: { label: "Documented", tone: "info" },
+  no_documented_answer: { label: "Not written down yet", tone: "mute" },
 };
 
-export function CertaintyLabel({ certainty, quiet = false }: { certainty: Certainty; quiet?: boolean }) {
+export function CertaintyLabel({ certainty }: { certainty: Certainty }) {
   const c = CERTAINTY[certainty];
-  if (quiet) return <span className="text-[11px] text-muted">{c.label}</span>;
-  return (
-    <Badge status={c.status}>
-      <Info className="h-3.5 w-3.5" aria-hidden />
-      {c.label}
-    </Badge>
-  );
+  return <Pill tone={c.tone}>{c.label}</Pill>;
 }
 
 export function PendingBadge({ pending }: { pending: Pending }) {
   if (pending.status === "answered") {
     return (
-      <Badge status="good">
+      <Pill tone="ok">
         <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Answered by {pending.person}
-      </Badge>
+      </Pill>
     );
   }
   return (
-    <Badge status="info">
+    <Pill tone="info">
       <Clock className="h-3.5 w-3.5" aria-hidden />
       {pending.status === "escalated"
         ? `Escalated to ${pending.escalated_to} · asked ${pending.person} ${timeAgo(pending.asked_at)}`
         : `Pending · asked ${pending.person} ${timeAgo(pending.asked_at)}`}
-    </Badge>
+    </Pill>
   );
 }
 
-export function WithheldNotice({ item, team, contact }: { item: string; team: string; contact: string | null }) {
+/** Seed people have no email addresses; a placeholder domain keeps the request honest about that. */
+const contactEmail = (id: string) => `${id}@heirloom.example`;
+
+export function WithheldNotice({
+  item,
+  team,
+  contact,
+  contactId,
+}: {
+  item: string;
+  team: string;
+  contact: string | null;
+  contactId?: string | null;
+}) {
   const teamName = TEAM_NAMES[team as keyof typeof TEAM_NAMES] ?? team;
+  const href =
+    contactId &&
+    `mailto:${contactEmail(contactId)}?subject=${encodeURIComponent(`Access request: ${item}`)}&body=${encodeURIComponent(
+      `Hi ${contact?.split(" ")[0] ?? ""},\n\nHeirloom withheld "${item}" (${teamName}-only) from an answer I received. Could you share it with me, or tell me who can?\n\nThanks`,
+    )}`;
   return (
-    <div className="flex items-start gap-2 rounded-[6px] bg-status-warn/[.08] px-3 py-2 text-sm">
-      <Lock className="mt-0.5 h-4 w-4 shrink-0 text-status-warn" aria-hidden />
-      <p>
-        <span className="font-medium">Withheld:</span> {item} ({teamName}-only).
-        {contact && ` Ask ${contact} for access.`}
+    <div className="flex flex-wrap items-center gap-3 rounded-[14px] bg-pill-warn px-4 py-3 text-pill-warn-fg">
+      <Lock className="h-4 w-4 shrink-0" aria-hidden />
+      <p className="flex-1 text-[15px]">
+        <span className="font-semibold">Kept private:</span> {item} ({teamName}-only).
+        {contact && ` ${contact} can grant access.`}
       </p>
+      {href && (
+        <a
+          href={href}
+          className="inline-flex min-h-tap items-center gap-2 rounded-btn border border-pill-warn-fg/30 bg-card px-4 text-sm font-semibold text-pill-warn-fg hover:bg-page"
+        >
+          <Mail className="h-4 w-4" aria-hidden /> Request access
+        </a>
+      )}
     </div>
   );
 }
 
 export function ReconfirmBadge({ months, requested }: { months: number; requested: boolean }) {
   return (
-    <Badge status="warn">
+    <Pill tone="warn">
       <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
       Last verified {months} month{months === 1 ? "" : "s"} ago
       {requested ? " · re-confirmation requested" : ""}
-    </Badge>
+    </Pill>
   );
 }

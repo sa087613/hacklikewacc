@@ -150,7 +150,7 @@ export default function NetworkPage() {
             </div>
           )}
         </Card>
-        {card && <AnswerCard card={card} onOpenSource={setSource} />}
+        {card && <AnswerCard card={card} showSources onOpenSource={setSource} />}
 
         {selected && (
           <Card>

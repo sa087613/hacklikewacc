@@ -24,36 +24,36 @@ export function SourcePanel({ target, onClose }: { target: SourceRef | null; onC
   }, [target]);
 
   useEffect(() => {
-    markRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    markRef.current?.scrollIntoView({ block: "center" }); // returns a Promise in recent Chrome; don't return it
   }, [source]);
 
   if (!target) return null;
   const hasSpan = source && target.start !== undefined && target.end !== undefined && target.start >= 0;
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[480px] flex-col border-l bg-surface shadow-xl">
-      <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
+    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[520px] flex-col border-l border-line bg-card shadow-xl">
+      <div className="flex items-start justify-between gap-3 border-b border-line px-7 py-5">
         <div>
-          <p className="text-xs text-muted">
+          <p className="text-sm text-navy-600">
             {source ? `${TEAM_NAMES[source.team_id]} · ${source.type.replace("_", " ")} · ${source.share_level.replace("_", "-")}` : "Source"}
           </p>
-          <h2 className="text-lg font-semibold">{source?.title ?? target.title ?? "Loading…"}</h2>
+          <h2 className="font-serif text-2xl font-medium">{source?.title ?? target.title ?? "Loading…"}</h2>
         </div>
-        <button onClick={onClose} aria-label="Close source" className="rounded-[6px] p-1 hover:bg-adp-navy-50">
+        <button onClick={onClose} aria-label="Close source" className="flex min-h-tap min-w-tap items-center justify-center rounded-btn hover:bg-pill-mute">
           <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-7 py-5">
         {error && (
-          <p className="flex items-center gap-2 text-sm text-status-warn">
+          <p className="flex items-center gap-2 text-sm text-pill-warn-fg">
             <Lock className="h-4 w-4" /> {error}
           </p>
         )}
         {source && (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-adp-navy">
+          <pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-navy-900">
             {hasSpan ? (
               <>
                 {source.text.slice(0, target.start)}
-                <mark ref={markRef} className="rounded bg-status-warn/20 px-0.5 text-adp-navy">
+                <mark ref={markRef} className="rounded bg-pill-warn px-0.5 text-navy-900">
                   {source.text.slice(target.start, target.end)}
                 </mark>
                 {source.text.slice(target.end)}

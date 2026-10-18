@@ -1,36 +1,30 @@
 "use client";
 
-import { AlertTriangle, Clock, Flag, MessageSquarePlus, ShieldCheck, ThumbsUp } from "lucide-react";
+import { AlertTriangle, Flag, MessageSquarePlus, ShieldCheck, ThumbsUp } from "lucide-react";
 import { useState } from "react";
-import { AgentAvatar } from "@/components/agent-avatar";
 import type { SourceRef } from "@/components/source-panel";
 import { SourceChip, SourceMarker } from "@/components/source-chip";
-import {
-  CertaintyLabel,
-  PendingBadge,
-  ReconfirmBadge,
-  VerifiedBadge,
-  WithheldNotice,
-} from "@/components/status";
+import { CertaintyLabel, PendingBadge, ReconfirmBadge, WithheldNotice } from "@/components/status";
+import { TraceTimeline } from "@/components/trace-timeline";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { isLead, KEEPER_NAMES, post, shortDate, TEAM_NAMES, type AnswerCard as Card, type Certainty } from "@/lib/api";
+import { Pill } from "@/components/ui/pill";
+import { isLead, KEEPER_NAMES, post, shortDate, TEAM_NAMES, type AnswerCard as Card, type TraceStep } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
 import { cn } from "@/lib/utils";
 
-function overall(card: Card): Certainty {
-  const c = card.points.map((p) => p.certainty);
-  if (c.includes("expert_verified")) return "expert_verified";
-  if (c.includes("documented")) return "documented";
-  return "no_documented_answer";
-}
-
 export function AnswerCard({
   card,
+  steps,
+  showSources,
   onOpenSource,
   onFollowUp,
 }: {
   card: Card;
-  onOpenSource: (s: SourceRef) => void;
+  steps?: TraceStep[];
+  /** List sources inside the card (for pages without a Sources column). */
+  showSources?: boolean;
+  onOpenSource: (s: SourceRef & { n: number }) => void;
   onFollowUp?: () => void;
 }) {
   const [feedback, setFeedback] = useState<null | "helpful" | "flagged" | "flagging">(null);
@@ -39,26 +33,17 @@ export function AnswerCard({
   const [reconfirmed, setReconfirmed] = useState<string | null>(null);
   const { user } = useDemoUser();
 
-  const firstCitation = (n: number) => {
-    for (const p of card.points) for (const c of p.citations) if (c.n === n) return c;
-    return null;
-  };
   const open = (n: number) => {
-    const c = firstCitation(n);
-    if (c) onOpenSource({ source_id: c.source_id, start: c.start, end: c.end, title: c.title });
+    for (const p of card.points)
+      for (const c of p.citations)
+        if (c.n === n) return onOpenSource({ n, source_id: c.source_id, start: c.start, end: c.end, title: c.title });
   };
+  const markers = (cits: { n: number }[]) => [...new Set(cits.map((c) => c.n))].map((n) => <SourceMarker key={n} n={n} onClick={() => open(n)} />);
 
-  const allAnswered = card.points.filter((p) => p.certainty !== "no_documented_answer");
-  // When the lead is the first point, show its source markers on the lead instead of repeating it.
-  const leadPoint = allAnswered[0]?.text === card.lead ? allAnswered[0] : null;
-  const answered = leadPoint ? allAnswered.slice(1) : allAnswered;
-  const gaps = card.points.filter((p) => p.certainty === "no_documented_answer");
-  const tone =
-    card.state === "conflict"
-      ? "border-status-warn/60 bg-status-warn/[.04]"
-      : card.state === "no_answer"
-        ? "border-border bg-surface-muted"
-        : "bg-surface";
+  const answered = card.points.filter((p) => p.certainty !== "no_documented_answer");
+  const leadPoint = answered[0]?.text === card.lead ? answered[0] : null;
+  const supporting = leadPoint ? answered.slice(1) : answered;
+  const pending = card.pending_expert;
 
   const flag = async () => {
     const res = await post<{ routed_to: string | null }>(`/answers/${card.answer_id}/flag`, { reason });
@@ -67,149 +52,168 @@ export function AnswerCard({
   };
 
   return (
-    <article className={cn("rounded-card border", tone)} aria-label={`Answer from ${KEEPER_NAMES[card.agent_team]}`}>
-      {/* 1. Header */}
-      <header className="flex items-center justify-between gap-3 border-b px-5 py-3">
-        <div className="flex items-center gap-3">
-          <AgentAvatar team={card.agent_team} />
-          <span className="font-semibold">{KEEPER_NAMES[card.agent_team]}</span>
+    <article
+      aria-label={`Answer from ${KEEPER_NAMES[card.agent_team]}`}
+      className={cn("space-y-6 rounded-card border bg-card p-7", card.state === "conflict" ? "border-pill-warn-fg/40" : "border-line")}
+    >
+      <header className="flex flex-wrap items-center gap-3">
+        <Avatar team={card.agent_team} size="md" />
+        <div className="flex-1">
+          <p className="font-semibold">{KEEPER_NAMES[card.agent_team]}</p>
+          {card.consulted_teams.length > 0 && (
+            <p className="text-sm text-navy-600">Asked {card.consulted_teams.map((t) => `${TEAM_NAMES[t].split(" &")[0]} Keeper`).join(" and ")}</p>
+          )}
         </div>
-        {card.consulted_teams.length > 0 && (
-          <span className="text-xs text-muted">consulted: {card.consulted_teams.map((t) => TEAM_NAMES[t]).join(", ")}</span>
+        {card.needs_reconfirmation && !reconfirmed && (
+          <ReconfirmBadge months={card.needs_reconfirmation.months_ago} requested={card.needs_reconfirmation.requested} />
         )}
       </header>
 
-      <div className="space-y-4 px-5 py-4">
-        {/* 2. Lead sentence */}
-        <p className={cn("text-[15px] font-medium leading-6", card.state === "no_answer" && "text-adp-navy-700")}>
-          {card.lead}
-          {leadPoint &&
-            [...new Set(leadPoint.citations.map((c) => c.n))].map((n) => <SourceMarker key={n} n={n} onClick={() => open(n)} />)}
-        </p>
-
-        {/* Conflicting answers: both sides, no winner picked */}
-        {card.conflict && (
-          <div className="space-y-2">
-            <p className="flex items-center gap-2 text-sm font-medium text-status-warn">
-              <AlertTriangle className="h-4 w-4" /> Conflicting answers
-              {card.conflict.routed_to && <span className="font-normal text-muted">· Routed to {card.conflict.routed_to} to resolve</span>}
+      {card.state === "no_answer" ? (
+        <div className="space-y-3">
+          <p className="font-serif text-[28px] font-medium leading-snug">Nobody has written this down yet.</p>
+          {pending && (
+            <p className="text-navy-600">
+              I&rsquo;ve asked {pending.person} on {TEAM_NAMES[pending.team]}. You&rsquo;ll be notified when they reply.
             </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {card.conflict.entries.map((e) => (
-                <div key={e.id} className="rounded-[6px] border bg-surface p-3 text-sm">
-                  <p>{e.summary}</p>
-                  <p className="mt-2 text-xs text-muted">
-                    Approved answer · {e.verified_by} · {shortDate(e.verified_at)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 3. Supporting points */}
-        {!card.conflict && answered.length > 0 && (
-          <ul className="space-y-2">
-            {answered.map((p, i) => (
-              <li key={i} className="flex gap-2 text-sm leading-6">
-                <span aria-hidden className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-adp-navy-700" />
-                <span className="flex-1">
-                  {p.text}
-                  {[...new Set(p.citations.map((c) => c.n))].map((n) => (
-                    <SourceMarker key={n} n={n} onClick={() => open(n)} />
-                  ))}
-                </span>
-                <CertaintyLabel certainty={p.certainty} quiet />
-              </li>
-            ))}
-          </ul>
-        )}
-        {gaps.map((p, i) => (
-          <p key={i} className="flex items-start gap-2 text-sm text-status-neutral">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {p.text}
-          </p>
-        ))}
-
-        {/* 4. Trust row */}
-        <div className="flex flex-wrap items-center gap-2">
-          {card.verified_by && <VerifiedBadge person={card.verified_by.person} date={card.verified_by.date} />}
-          {!card.conflict && <CertaintyLabel certainty={overall(card)} />}
-          {card.needs_reconfirmation && !reconfirmed && (
-            <ReconfirmBadge months={card.needs_reconfirmation.months_ago} requested={card.needs_reconfirmation.requested} />
           )}
-          {card.needs_reconfirmation && isLead(user) && !reconfirmed && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                post(`/entries/${card.needs_reconfirmation!.entry_id}/reconfirm`)
-                  .then(() => setReconfirmed("Re-confirmed. Expiry reset."))
-                  .catch((e) => setReconfirmed(e.message))
-              }
-            >
-              Re-confirm
-            </Button>
-          )}
-          {reconfirmed && <span className="text-xs text-muted">{reconfirmed}</span>}
-          {card.pending_expert && <PendingBadge pending={card.pending_expert} />}
-          {card.verification.dropped_citations > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted" title="Quotes that were not found verbatim in their sources were removed.">
-              <ShieldCheck className="h-3.5 w-3.5" /> {card.verification.dropped_citations} unverifiable quote
-              {card.verification.dropped_citations > 1 ? "s" : ""} removed
-            </span>
-          )}
+          {pending && <PendingBadge pending={pending} />}
         </div>
+      ) : (
+        <p className="font-serif text-[28px] font-medium leading-snug">
+          {card.lead}
+          {leadPoint && markers(leadPoint.citations)}
+        </p>
+      )}
+      {leadPoint && !card.conflict && <CertaintyLabel certainty={leadPoint.certainty} />}
 
-        {/* 5. Sources */}
-        {card.sources.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-muted">Sources</span>
-            {card.sources.map((s) => (
-              <SourceChip key={s.n} n={s.n} title={s.title} onClick={() => open(s.n)} />
+      {card.conflict && (
+        <div className="space-y-3">
+          <p className="flex flex-wrap items-center gap-2 font-semibold text-pill-warn-fg">
+            <AlertTriangle className="h-4 w-4" aria-hidden /> Conflicting answers
+            {card.conflict.routed_to && <span className="font-normal">· sent to {card.conflict.routed_to} to resolve</span>}
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {card.conflict.entries.map((e) => (
+              <div key={e.id} className="rounded-[14px] bg-pill-warn/60 p-4">
+                <p>{e.summary}</p>
+                <p className="mt-2 text-sm text-pill-warn-fg">
+                  Approved answer · {e.verified_by} · {shortDate(e.verified_at)}
+                </p>
+              </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {!card.conflict && supporting.length > 0 && (
+        <ul className="space-y-3 border-t border-line pt-4">
+          {supporting.map((p, i) => (
+            <li key={i} className="flex flex-wrap items-start gap-x-3 gap-y-1.5 border-t border-line pt-3 first:border-0 first:pt-0">
+              <span className="min-w-0 flex-1">
+                {p.text}
+                {markers(p.citations)}
+              </span>
+              <CertaintyLabel certainty={p.certainty} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {card.state !== "no_answer" &&
+        card.points
+          .filter((p) => p.certainty === "no_documented_answer")
+          .map((p, i) => (
+            <div key={i} className="space-y-2 rounded-[14px] bg-page p-4">
+              <p>
+                Nobody has written this part down yet: {p.text.replace(/^No documented answer yet for: /, "").replace(/\.$/, "")}.
+              </p>
+              {pending && <PendingBadge pending={pending} />}
+            </div>
+          ))}
+
+      {card.verified_by && (
+        <figure className="border-l-4 border-pill-ok-fg/40 pl-4">
+          <p className="font-serif text-[19px] italic">
+            Passed down by {card.verified_by.person}
+            {card.verified_by.date && `, verified ${shortDate(card.verified_by.date)}`}
+          </p>
+        </figure>
+      )}
+
+      {showSources && card.sources.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold">Sources</span>
+          {card.sources.map((src) => (
+            <SourceChip key={src.n} n={src.n} title={src.title} onClick={() => open(src.n)} />
+          ))}
+        </div>
+      )}
+
+      {card.withheld.map((w, i) => (
+        <WithheldNotice key={i} item={w.item} team={w.team} contact={w.contact} contactId={w.contact_id} />
+      ))}
+
+      {card.verification.dropped_citations > 0 && (
+        <Pill tone="mute" title="Quotes that were not found word for word in their sources were removed.">
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+          {card.verification.dropped_citations} unverifiable quote{card.verification.dropped_citations > 1 ? "s" : ""} removed
+        </Pill>
+      )}
+
+      <div className="flex flex-wrap items-center gap-1">
+        <Button
+          size="sm"
+          variant="quiet"
+          disabled={feedback !== null && feedback !== "flagging"}
+          onClick={() => post(`/answers/${card.answer_id}/helpful`).then(() => setFeedback("helpful"))}
+        >
+          <ThumbsUp className="h-4 w-4" aria-hidden /> {feedback === "helpful" ? "Thanks" : "Helpful"}
+        </Button>
+        <Button size="sm" variant="quiet" disabled={feedback === "flagged"} onClick={() => setFeedback("flagging")}>
+          <Flag className="h-4 w-4" aria-hidden /> {feedback === "flagged" ? "Flagged" : "Flag as wrong"}
+        </Button>
+        {onFollowUp && (
+          <Button size="sm" variant="quiet" onClick={onFollowUp}>
+            <MessageSquarePlus className="h-4 w-4" aria-hidden /> Ask a follow-up
+          </Button>
         )}
-
-        {/* 6. Withheld */}
-        {card.withheld.map((w, i) => (
-          <WithheldNotice key={i} item={w.item} team={w.team} contact={w.contact} />
-        ))}
-
-        {/* 7. Actions */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        {card.needs_reconfirmation && isLead(user) && !reconfirmed && (
           <Button
             size="sm"
-            variant="secondary"
-            disabled={feedback !== null && feedback !== "flagging"}
-            onClick={() => post(`/answers/${card.answer_id}/helpful`).then(() => setFeedback("helpful"))}
+            variant="quiet"
+            onClick={() =>
+              post(`/entries/${card.needs_reconfirmation!.entry_id}/reconfirm`)
+                .then(() => setReconfirmed("Re-confirmed. Expiry reset."))
+                .catch((e) => setReconfirmed(e.message))
+            }
           >
-            <ThumbsUp className="h-4 w-4" /> {feedback === "helpful" ? "Thanks" : "Helpful"}
+            Re-confirm
           </Button>
-          <Button size="sm" variant="secondary" disabled={feedback === "flagged"} onClick={() => setFeedback("flagging")}>
-            <Flag className="h-4 w-4" /> {feedback === "flagged" ? "Flagged" : "Flag as wrong"}
-          </Button>
-          {onFollowUp && (
-            <Button size="sm" variant="ghost" onClick={onFollowUp}>
-              <MessageSquarePlus className="h-4 w-4" /> Ask a follow-up
-            </Button>
-          )}
-        </div>
-        {feedback === "flagging" && (
-          <div className="flex gap-2">
-            <input
-              autoFocus
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="What's wrong? (optional)"
-              className="h-8 flex-1 rounded-[6px] border px-2 text-sm"
-            />
-            <Button size="sm" onClick={flag}>Send to owner</Button>
-          </div>
         )}
-        {feedback === "flagged" && (
-          <p className="text-xs text-muted">Flagged. {flagResult ?? "The knowledge owner"} will review it, and everyone who got this answer is notified if it changes.</p>
-        )}
+        {reconfirmed && <span className="text-sm text-navy-600">{reconfirmed}</span>}
       </div>
+      {feedback === "flagging" && (
+        <div className="flex flex-wrap gap-2">
+          <input
+            autoFocus
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="What's wrong? (optional)"
+            aria-label="What's wrong with this answer"
+            className="min-h-tap flex-1 rounded-btn border border-line px-3"
+          />
+          <Button size="sm" onClick={flag}>
+            Send to owner
+          </Button>
+        </div>
+      )}
+      {feedback === "flagged" && (
+        <p className="text-sm text-navy-600">
+          Flagged. {flagResult ?? "The knowledge owner"} will review it, and everyone who got this answer is notified if it changes.
+        </p>
+      )}
+
+      {steps && <TraceTimeline steps={steps} />}
     </article>
   );
 }

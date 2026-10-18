@@ -1,25 +1,25 @@
 "use client";
 
-import { PanelRightClose, PanelRightOpen, SendHorizonal } from "lucide-react";
+import { SendHorizonal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { AgentAvatar } from "@/components/agent-avatar";
 import { AnswerCard } from "@/components/answer-card";
 import { SourcePanel, type SourceRef } from "@/components/source-panel";
-import { TracePanel } from "@/components/trace-panel";
+import { SourcesPanel } from "@/components/sources-panel";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  askStream,
-  KEEPER_NAMES,
-  TEAMS,
-  type AnswerCard as AnswerCardT,
-  type TeamId,
-  type TraceStep,
-} from "@/lib/api";
+import { Segmented } from "@/components/ui/segmented";
+import { askStream, KEEPER_NAMES, type AnswerCard as AnswerCardT, type TeamId, type TraceStep } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
 
 type Turn = { id: number; question: string; team: TeamId; steps: TraceStep[]; card: AnswerCardT | null; error?: string };
+
+const KEEPERS: { value: TeamId; label: string }[] = [
+  { value: "time", label: "Time" },
+  { value: "payroll", label: "Payroll" },
+  { value: "benefits", label: "Benefits" },
+];
 
 function AskInner() {
   const { user, refreshBadges } = useDemoUser();
@@ -29,8 +29,8 @@ function AskInner() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
-  const [showTrace, setShowTrace] = useState(true);
-  const [source, setSource] = useState<SourceRef | null>(null);
+  const [sourceN, setSourceN] = useState(1);
+  const [sheet, setSheet] = useState<SourceRef | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const asked = useRef<string | null>(null);
@@ -42,6 +42,7 @@ function AskInner() {
     const id = Date.now();
     setTurns((t) => [...t, { id, question, team: agentTeam, steps: [], card: null }]);
     setSelected(id);
+    setSourceN(1);
     setInput("");
     setBusy(true);
     const update = (fn: (t: Turn) => Turn) => setTurns((all) => all.map((t) => (t.id === id ? fn(t) : t)));
@@ -69,53 +70,44 @@ function AskInner() {
   }, [params, user]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [turns]);
+    bottomRef.current?.scrollIntoView({ block: "end" }); // returns a Promise in recent Chrome; don't return it
+  }, [turns.length]);
 
   const current = turns.find((t) => t.id === selected) ?? turns[turns.length - 1] ?? null;
 
   return (
-    <div className="flex gap-6">
-      <div className="min-w-0 flex-1 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">Ask</h1>
-          <div className="flex items-center gap-2">
-            <label htmlFor="agent" className="text-sm text-muted">
-              Agent
-            </label>
-            <select
-              id="agent"
-              value={agentTeam ?? ""}
-              onChange={(e) => setTeam(e.target.value as TeamId)}
-              className="h-9 rounded-[6px] border bg-surface px-2 text-sm"
-            >
-              {TEAMS.map((t) => (
-                <option key={t} value={t}>
-                  {KEEPER_NAMES[t]}
-                  {t === user?.team_id ? " (your team)" : ""}
-                </option>
-              ))}
-            </select>
-            <Button variant="ghost" size="icon" onClick={() => setShowTrace((s) => !s)} aria-label="Toggle trace">
-              {showTrace ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-            </Button>
-          </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h1 className="page-title">Ask</h1>
+          {agentTeam && (
+            <Segmented
+              label="Choose a Keeper"
+              value={agentTeam}
+              onChange={setTeam}
+              options={KEEPERS.map((k) => ({
+                value: k.value,
+                label: k.value === user?.team_id ? `${k.label} (yours)` : k.label,
+                ariaLabel: KEEPER_NAMES[k.value],
+              }))}
+            />
+          )}
         </div>
 
-        {turns.length === 0 && (
-          <Card className="text-sm text-muted">
-            <div className="mb-2 flex items-center gap-3 text-adp-navy">
-              {agentTeam && <AgentAvatar team={agentTeam} />}
-              <span className="font-semibold">{agentTeam ? KEEPER_NAMES[agentTeam] : "Keeper"}</span>
+        {turns.length === 0 && agentTeam && (
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar team={agentTeam} size="md" />
+              <p className="font-semibold">{KEEPER_NAMES[agentTeam]}</p>
             </div>
-            Ask anything about your team or other teams. Answers cite their sources, and gaps go to the right expert.
-            <div className="mt-3 flex flex-wrap gap-2">
+            <p className="text-navy-600">Ask anything about your team or other teams. Every answer shows where it came from, and gaps go to the right expert.</p>
+            <div className="flex flex-wrap gap-2">
               {[
                 "How does overtime affect benefits eligibility?",
                 "How do retro pay corrections handle overtime, and does it affect benefits eligibility?",
                 "When is unused PTO paid out after an employee leaves?",
               ].map((q) => (
-                <button key={q} onClick={() => ask(q)} className="rounded-full bg-adp-navy-50 px-3 py-1 text-xs text-adp-navy hover:bg-border">
+                <button key={q} type="button" onClick={() => ask(q)} className="min-h-tap rounded-full bg-pill-mute px-4 text-left text-sm text-pill-mute-fg hover:bg-line">
                   {q}
                 </button>
               ))}
@@ -124,23 +116,27 @@ function AskInner() {
         )}
 
         {turns.map((t) => (
-          <section key={t.id} className="space-y-3" onClick={() => setSelected(t.id)}>
-            <div className="ml-auto w-fit max-w-[80%] rounded-card bg-adp-navy px-4 py-2 text-sm text-white">{t.question}</div>
+          <section key={t.id} className="space-y-4" onFocus={() => setSelected(t.id)} onClick={() => setSelected(t.id)}>
+            <div className="ml-auto w-fit max-w-[85%] rounded-[18px] rounded-br-md bg-navy-900 px-5 py-3 text-white">{t.question}</div>
             {!t.card && !t.error && (
-              <div className="space-y-1 rounded-card border bg-surface px-5 py-3" aria-live="polite">
+              <div className="space-y-1 rounded-card border border-line bg-card px-7 py-5" aria-live="polite">
                 {t.steps.map((s, i) => (
-                  <p key={i} className={i === t.steps.length - 1 ? "text-sm text-adp-navy" : "text-sm text-muted"}>
+                  <p key={i} className={i === t.steps.length - 1 ? "text-navy-900" : "text-navy-600"}>
                     {s.text}
                   </p>
                 ))}
-                {t.steps.length === 0 && <p className="text-sm text-muted">Thinking…</p>}
+                {t.steps.length === 0 && <p className="text-navy-600">Thinking…</p>}
               </div>
             )}
-            {t.error && <p className="rounded-card border border-status-critical/40 bg-surface px-4 py-3 text-sm text-status-critical">{t.error}</p>}
+            {t.error && <p className="rounded-card border border-pill-bad-fg/30 bg-pill-bad px-6 py-4 text-pill-bad-fg">{t.error}</p>}
             {t.card && (
               <AnswerCard
                 card={t.card}
-                onOpenSource={setSource}
+                steps={t.steps}
+                onOpenSource={(s) => {
+                  setSelected(t.id);
+                  setSourceN(s.n);
+                }}
                 onFollowUp={() => {
                   setTeam(t.team);
                   inputRef.current?.focus();
@@ -156,7 +152,7 @@ function AskInner() {
             e.preventDefault();
             ask(input);
           }}
-          className="sticky bottom-0 flex gap-2 border-t bg-surface-muted py-3"
+          className="sticky bottom-24 flex gap-2 rounded-card border border-line bg-card p-2 nav:bottom-4"
         >
           <textarea
             ref={inputRef}
@@ -171,21 +167,18 @@ function AskInner() {
             }}
             placeholder={agentTeam ? `Ask ${KEEPER_NAMES[agentTeam]}…` : "Ask…"}
             aria-label="Question"
-            className="min-h-9 flex-1 resize-none rounded-[6px] border bg-surface px-3 py-2 text-sm"
+            className="min-h-tap flex-1 resize-none bg-transparent px-3 py-2.5 focus:outline-none"
           />
           <Button type="submit" disabled={busy || !input.trim()}>
-            <SendHorizonal className="h-4 w-4" /> Ask
+            <SendHorizonal className="h-4 w-4" aria-hidden /> Ask
           </Button>
         </form>
       </div>
 
-      {showTrace && (
-        <aside className="sticky top-20 hidden h-fit w-[320px] shrink-0 rounded-card border bg-surface p-5 lg:block">
-          <h2 className="mb-3 text-base font-semibold">How this was answered</h2>
-          <TracePanel card={current?.card ?? null} steps={current?.steps ?? []} />
-        </aside>
-      )}
-      <SourcePanel target={source} onClose={() => setSource(null)} />
+      <aside className="lg:sticky lg:top-24 lg:h-fit">
+        <SourcesPanel card={current?.card ?? null} selected={sourceN} onSelect={setSourceN} onOpenFull={setSheet} />
+      </aside>
+      <SourcePanel target={sheet} onClose={() => setSheet(null)} />
     </div>
   );
 }
