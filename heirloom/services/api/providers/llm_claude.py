@@ -40,7 +40,7 @@ STANDUP_SCHEMA = _obj({"insights": {"type": "array", "items": _obj({
     "evidence": {"type": "array", "items": _obj({"team": _STR, "source_id": _STR, "quote": _STR})},
     "confidence": {"type": "number"},
     "suggested_contacts": _STRS,
-})})})
+})}})
 IMPACT_SCHEMA = _obj({
     "no_impact": {"type": "boolean"},
     "summary": _STR,

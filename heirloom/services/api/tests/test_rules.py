@@ -98,3 +98,40 @@ def test_no_tool_changes_external_systems():
     """Agents only inform: the MCP tool surface is read-only by construction."""
     assert {n for n in dir(agents.TeamAgent) if not n.startswith("_")} == {
         "ask", "capability_card", "whats_in_progress", "assess_impact", "sole_source_topics"}
+
+
+def test_seeding_never_calls_the_live_llm(monkeypatch):
+    """Seeding must work even when the configured LLM fails (e.g. a live key with no model access)."""
+    import providers
+    from scripts.seed import seed
+
+    class Broken:
+        def __getattr__(self, name):
+            raise RuntimeError("live LLM called during seeding")
+
+    monkeypatch.setattr(providers, "get_llm", lambda: Broken())
+    monkeypatch.setattr("knowledge.get_llm", lambda: Broken())
+    seed(verbose=False)
+    with tx() as conn:
+        statuses = dict(conn.execute(sa.select(knowledge_entries.c.question, knowledge_entries.c.status)).all())
+    assert statuses["When is unused PTO paid out after an employee leaves?"] == "conflicted"
+
+
+def test_failed_live_llm_falls_back_and_is_reported(client, monkeypatch):
+    import providers
+    from providers.llm_mock import MockLLM
+    from tests.conftest import as_
+
+    class Down:
+        def __getattr__(self, name):
+            def fail(*a, **k):
+                raise RuntimeError("model not available")
+            return fail
+
+    monkeypatch.setattr(providers, "get_llm", lambda: providers._WithFallback(Down(), MockLLM()))
+    monkeypatch.setattr("orchestrator.get_llm", providers.get_llm)
+    card = client.post("/ask?stream=false", json={"question": "How does overtime affect benefits eligibility?"},
+                       headers=as_("jordan-kim")).json()
+    assert card["state"] == "answer"  # answered by the offline fallback
+    assert "model not available" in client.get("/health").json()["llm_error"]
+    providers.last_llm_error = ""

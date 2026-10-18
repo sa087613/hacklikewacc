@@ -51,7 +51,14 @@ def health():
             count = lambda t: conn.execute(sa.select(sa.func.count()).select_from(t)).scalar()
             counts = {"teams": count(teams), "people": count(people), "sources": count(sources),
                       "chunks": count(chunks), "entries": count(knowledge_entries)}
-        return {"status": "ok", "db": True, "counts": counts, "providers": settings.provider_status()}
+        import providers
+
+        out = {"status": "ok", "db": True, "counts": counts, "providers": settings.provider_status()}
+        if providers.last_llm_error:
+            out["llm_error"] = providers.last_llm_error
+        if bootstrap.last_error:
+            out.update(status="degraded", bootstrap_error=bootstrap.last_error)
+        return out
     except Exception as e:  # health should report, not crash
         return {"status": "degraded", "db": False, "error": f"{type(e).__name__}: {e}",
                 "bootstrap_error": bootstrap.last_error, "providers": settings.provider_status()}

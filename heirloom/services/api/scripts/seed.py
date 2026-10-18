@@ -13,6 +13,7 @@ import policy  # noqa: E402
 from config import settings  # noqa: E402
 from ingest import ingest_source, parse_file  # noqa: E402
 from knowledge import detect_conflicts, expiry_sweep  # noqa: E402
+from providers.llm_mock import MockLLM  # noqa: E402
 from store import db  # noqa: E402
 from store.schema import (contributions, entry_sources, knowledge_entries, new_id, people, teams,  # noqa: E402
                           topic_knowers, topics)
@@ -79,7 +80,9 @@ def seed(verbose: bool = True) -> dict:
         for entry_id in seeded:
             entry = one(conn.execute(sa.select(knowledge_entries).where(knowledge_entries.c.id == entry_id)))
             if entry["status"] == "approved":
-                found = detect_conflicts(conn, entry)
+                # Seed data is fixed, so its planted conflict is checked deterministically: seeding never
+                # calls a paid model (on Vercel every cold instance seeds its own in-memory database).
+                found = detect_conflicts(conn, entry, llm=MockLLM())
                 if found:
                     log(f"  conflict detected on topic {entry['topic_id']}")
 

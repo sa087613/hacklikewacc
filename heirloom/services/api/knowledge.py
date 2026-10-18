@@ -285,15 +285,17 @@ def expiry_sweep(conn) -> int:
 
 # --------------------------------------------------------------- conflicts
 
-def detect_conflicts(conn, entry: Dict) -> List[str]:
-    """Compare an approved entry with others on its topic. Disagreements are flagged, never resolved."""
+def detect_conflicts(conn, entry: Dict, llm=None) -> List[str]:
+    """Compare an approved entry with others on its topic. Disagreements are flagged, never resolved.
+
+    llm defaults to the active provider; seeding passes the deterministic mock (fixed data, no API calls)."""
     if not entry["topic_id"]:
         return []
     others = rows(conn.execute(sa.select(knowledge_entries).where(
         knowledge_entries.c.topic_id == entry["topic_id"], knowledge_entries.c.id != entry["id"],
         knowledge_entries.c.status.in_(["approved", "conflicted", "expired"]))))
     found = []
-    llm = get_llm()
+    llm = llm or get_llm()
     for o in others:
         verdict = llm.detect_conflict(
             {"question": entry["question"], "answer": entry["answer"]}, {"question": o["question"], "answer": o["answer"]})
