@@ -2,8 +2,8 @@
 
 import { Plus, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { AgentAvatar } from "@/components/agent-avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Pill } from "@/components/ui/pill";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { api, KEEPER_NAMES, TEAM_NAMES, TEAMS, type Person, type TeamId } from "@/lib/api";
@@ -21,7 +21,8 @@ type Team = {
   can_edit: boolean;
 };
 
-const SHARE = { team: "Team only", cross_team: "Cross-team", company: "Company" } as const;
+// Same labels as knowledge PR review: Private = team-only, Team = other Keepers may use it, Company = everyone.
+const SHARE = { team: "Private", cross_team: "Team", company: "Company" } as const;
 const EXPIRY_LABEL: Record<string, string> = {
   regulation: "Regulation / tax rule",
   process: "Process / how-to",
@@ -31,7 +32,7 @@ const EXPIRY_LABEL: Record<string, string> = {
 
 function ShareSelect({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
-    <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="h-8 rounded-[6px] border bg-surface px-2 text-sm">
+    <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="min-h-tap rounded-btn border bg-card px-2 text-sm">
       {Object.entries(SHARE).map(([k, v]) => (
         <option key={k} value={k}>
           {v}
@@ -86,7 +87,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (!team) return <p className="text-sm text-muted">Loading…</p>;
+  if (!team) return <p className="text-sm text-navy-600">Loading…</p>;
   const card = team.capability_card;
   const edit = team.can_edit;
 
@@ -94,17 +95,17 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-3">
-          <AgentAvatar team={team.id} />
+          <Avatar team={team.id} />
           <div>
-            <h1 className="text-2xl font-semibold">Team settings · {TEAM_NAMES[team.id]}</h1>
-            <p className="text-sm text-muted">
+            <h1 className="page-title">Team settings · {TEAM_NAMES[team.id]}</h1>
+            <p className="text-sm text-navy-600">
               {KEEPER_NAMES[team.id]}. {edit ? "You're this team's knowledge owner." : "Read-only: only the knowledge owner can change these."}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {saved && <span className="text-sm text-status-good">{saved}</span>}
-          <select value={team.id} onChange={(e) => setTeamId(e.target.value as TeamId)} aria-label="Team" className="h-9 rounded-[6px] border bg-surface px-2 text-sm">
+          {saved && <span className="text-sm text-pill-ok-fg">{saved}</span>}
+          <select value={team.id} onChange={(e) => setTeamId(e.target.value as TeamId)} aria-label="Team" className="min-h-tap rounded-btn border bg-card px-2 text-sm">
             {TEAMS.map((t) => (
               <option key={t} value={t}>
                 {TEAM_NAMES[t]}
@@ -113,35 +114,38 @@ export default function SettingsPage() {
           </select>
         </div>
       </div>
-      {error && <Card className="text-sm text-status-critical">{error}</Card>}
+      {error && <Card className="text-sm text-pill-bad-fg">{error}</Card>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-3">
           <CardTitle className="text-base">Capability card</CardTitle>
-          <p className="text-xs text-muted">Other Keepers read this to decide whether to ask {TEAM_NAMES[team.id]}. Agents don&rsquo;t broadcast.</p>
+          <p className="text-sm text-navy-600">Other Keepers read this to decide whether to ask {TEAM_NAMES[team.id]}. Agents don&rsquo;t broadcast.</p>
           <textarea
             defaultValue={card.summary}
             disabled={!edit}
             onBlur={(e) => e.target.value !== card.summary && save({ capability_card: { ...card, summary: e.target.value } })}
             rows={3}
             aria-label="What this team owns"
-            className="w-full rounded-[6px] border px-3 py-2 text-sm"
+            className="w-full rounded-btn border px-3 py-2 text-sm"
           />
           <div className="flex flex-wrap gap-1.5">
             {card.owned_topics.map((t) => (
-              <Badge key={t} status="neutral">
+              <Pill key={t} tone="mute">
                 {team.topics.find((x) => x.id === t)?.name ?? t}
                 {edit && (
-                  <button aria-label={`Remove ${t}`} onClick={() => save({ capability_card: { ...card, owned_topics: card.owned_topics.filter((x) => x !== t) } })}>
+                  <button
+                    aria-label={`Remove ${t}`}
+                    className="relative before:absolute before:-inset-3 before:content-['']"
+                    onClick={() => save({ capability_card: { ...card, owned_topics: card.owned_topics.filter((x) => x !== t) } })}>
                     <X className="h-3 w-3" />
                   </button>
                 )}
-              </Badge>
+              </Pill>
             ))}
           </div>
           {edit && (
             <div className="flex gap-2">
-              <select value={newTopic} onChange={(e) => setNewTopic(e.target.value)} aria-label="Add owned topic" className="h-8 flex-1 rounded-[6px] border bg-surface px-2 text-sm">
+              <select value={newTopic} onChange={(e) => setNewTopic(e.target.value)} aria-label="Add owned topic" className="min-h-tap flex-1 rounded-btn border bg-card px-2 text-sm">
                 <option value="">Add an owned topic…</option>
                 {team.topics.filter((t) => !card.owned_topics.includes(t.id)).map((t) => (
                   <option key={t.id} value={t.id}>
@@ -159,7 +163,7 @@ export default function SettingsPage() {
         <Card className="space-y-4">
           <div className="space-y-2">
             <CardTitle className="text-base">Default share level</CardTitle>
-            <p className="text-xs text-muted">Applies to new entries and sources. Override per source below.</p>
+            <p className="text-sm text-navy-600">Applies to new entries and sources. Override per source below.</p>
             <ShareSelect value={team.default_share_level} disabled={!edit} onChange={(v) => save({ default_share_level: v })} />
           </div>
           <div className="space-y-2">
@@ -175,7 +179,7 @@ export default function SettingsPage() {
                         disabled={!edit}
                         aria-label={`Expiry for ${label}`}
                         onChange={(e) => save({ expiry_defaults: { ...team.expiry_defaults, [k]: Number(e.target.value) || null } })}
-                        className="h-8 rounded-[6px] border bg-surface px-2"
+                        className="min-h-tap rounded-btn border bg-card px-2"
                       >
                         {[3, 6, 12, 24].map((m) => (
                           <option key={m} value={m}>
@@ -196,7 +200,7 @@ export default function SettingsPage() {
       <Card className="space-y-3">
         <CardTitle className="text-base">Roster</CardTitle>
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-muted">
+          <thead className="text-left text-sm text-navy-600">
             <tr className="border-b">
               <th className="py-2 font-medium">Name</th>
               <th className="py-2 font-medium">Title</th>
@@ -206,13 +210,13 @@ export default function SettingsPage() {
           </thead>
           <tbody>
             {team.roster.map((p) => (
-              <tr key={p.id} className="border-b last:border-0 hover:bg-adp-navy-50">
+              <tr key={p.id} className="border-b last:border-0 hover:bg-pill-mute">
                 <td className="py-2">
-                  {p.name} {p.is_departing && <Badge status="warn">Departing</Badge>}
+                  {p.name} {p.is_departing && <Pill tone="warn">Departing</Pill>}
                 </td>
-                <td className="py-2 text-muted">{p.title}</td>
+                <td className="py-2 text-navy-600">{p.title}</td>
                 <td className="py-2 capitalize">{p.is_knowledge_owner ? "Knowledge owner" : p.role}</td>
-                <td className="py-2 text-muted">{card.contacts.find((c) => c.person_id === p.id)?.for ?? "—"}</td>
+                <td className="py-2 text-navy-600">{card.contacts.find((c) => c.person_id === p.id)?.for ?? "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -221,13 +225,13 @@ export default function SettingsPage() {
 
       <Card className="space-y-3">
         <CardTitle className="text-base">Connected sources</CardTitle>
-        <p className="text-xs text-muted">
+        <p className="text-sm text-navy-600">
           In the demo, sources are uploaded files (Markdown, text, PDF, Word). Documents that contain employee records are rejected.
         </p>
         {edit && (
           <div className="flex flex-wrap items-center gap-2">
             <input type="file" accept=".md,.txt,.pdf,.docx" onChange={(e) => setUpload(e.target.files?.[0] ?? null)} aria-label="Upload a source" className="text-sm" />
-            <select value={uploadShare} onChange={(e) => setUploadShare(e.target.value)} aria-label="Share level for upload" className="h-8 rounded-[6px] border bg-surface px-2 text-sm">
+            <select value={uploadShare} onChange={(e) => setUploadShare(e.target.value)} aria-label="Share level for upload" className="min-h-tap rounded-btn border bg-card px-2 text-sm">
               <option value="">Team default</option>
               {Object.entries(SHARE).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -241,7 +245,7 @@ export default function SettingsPage() {
           </div>
         )}
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-muted">
+          <thead className="text-left text-sm text-navy-600">
             <tr className="border-b">
               <th className="py-2 font-medium">Source</th>
               <th className="py-2 font-medium">Type</th>
@@ -250,9 +254,9 @@ export default function SettingsPage() {
           </thead>
           <tbody>
             {team.sources.map((s) => (
-              <tr key={s.id} className="border-b last:border-0 hover:bg-adp-navy-50">
+              <tr key={s.id} className="border-b last:border-0 hover:bg-pill-mute">
                 <td className="py-2">{s.title}</td>
-                <td className="py-2 capitalize text-muted">{s.type.replace("_", " ")}</td>
+                <td className="py-2 capitalize text-navy-600">{s.type.replace("_", " ")}</td>
                 <td className="py-2 text-right">
                   <ShareSelect
                     value={s.share_level}

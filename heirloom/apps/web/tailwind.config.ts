@@ -31,13 +31,6 @@ const config: Config = {
         pill,
         team,
         tile: { red: "#B91C1C", amber: "#FAD9A1", green: pill.ok },
-
-        // Legacy aliases onto the new palette, removed once every page is migrated.
-        adp: { red: red[600], "red-bright": red[600], "red-dark": red[700], navy: navy[900], "navy-700": navy[600], "navy-50": pill.mute },
-        surface: { DEFAULT: "#FFFFFF", muted: "#F4F6FB" },
-        border: "#D9DEEB",
-        muted: navy[600],
-        status: { good: pill["ok-fg"], warn: pill["warn-fg"], critical: pill["bad-fg"], info: pill["info-fg"], neutral: pill["mute-fg"] },
       },
       fontFamily: {
         sans: ["var(--font-hanken)", "system-ui", "sans-serif"],

@@ -3,8 +3,8 @@
 import { CircleHelp, MessageSquare, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AgentAvatar } from "@/components/agent-avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Pill } from "@/components/ui/pill";
 import { Card } from "@/components/ui/card";
 import { api, post, TEAM_NAMES, type TeamId } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
@@ -35,7 +35,7 @@ export default function RampupPage() {
   }, [user]);
   useEffect(load, [load, version]);
 
-  if (!path || !user) return <p className="text-sm text-muted">Loading…</p>;
+  if (!path || !user) return <p className="text-sm text-navy-600">Loading…</p>;
   const toggle = (id: string) =>
     post(`/rampup/items/${id}/toggle`).then(() =>
       setPath((p) => p && { ...p, items: p.items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)), progress: { ...p.progress, done: p.progress.done + (p.items.find((i) => i.id === id)!.done ? -1 : 1) } }),
@@ -46,13 +46,13 @@ export default function RampupPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Ramp-up path</h1>
-          <p className="text-sm text-muted">
+          <h1 className="page-title">Ramp-up path</h1>
+          <p className="text-sm text-navy-600">
             Two weeks across {TEAM_NAMES[user.team_id]} and the teams it depends on: {path.teams.filter((t) => t.team_id !== user.team_id).map((t) => t.name).join(", ") || "none"}.
           </p>
         </div>
         <div className="w-64">
-          <p className="mb-1 flex justify-between text-xs text-muted">
+          <p className="mb-1 flex justify-between text-sm text-navy-600">
             <span>
               Day {path.day} of {path.days}
             </span>
@@ -60,8 +60,8 @@ export default function RampupPage() {
               {path.progress.done}/{path.progress.total} done
             </span>
           </p>
-          <div className="h-2 rounded-full bg-adp-navy-50" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-            <div className="h-2 rounded-full bg-adp-red" style={{ width: `${pct}%` }} />
+          <div className="h-2 rounded-full bg-pill-mute" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <div className="h-2 rounded-full bg-red-600" style={{ width: `${pct}%` }} />
           </div>
         </div>
       </div>
@@ -72,9 +72,9 @@ export default function RampupPage() {
         return (
           <Card key={t.team_id} className="p-0">
             <header className="flex items-center gap-3 border-b px-5 py-3">
-              <AgentAvatar team={t.team_id} />
+              <Avatar team={t.team_id} />
               <h2 className="font-semibold">{t.name}</h2>
-              <span className="text-xs text-muted">
+              <span className="text-sm text-navy-600">
                 Days {Math.min(...days)}–{Math.max(...days)}
               </span>
             </header>
@@ -83,11 +83,13 @@ export default function RampupPage() {
                 const K = KIND[i.kind];
                 return (
                   <li key={i.id} className="flex items-start gap-3 px-5 py-3 text-sm">
-                    <input type="checkbox" checked={i.done} onChange={() => toggle(i.id)} aria-label={`Done: ${i.title}`} className="mt-1" />
-                    <span className="w-14 shrink-0 text-xs text-muted">Day {i.day}</span>
-                    <K.icon className="mt-0.5 h-4 w-4 shrink-0 text-adp-navy-700" aria-hidden />
-                    <div className={i.done ? "flex-1 text-muted line-through" : "flex-1"}>
-                      <span className="mr-2 text-xs font-medium text-muted">{K.label}</span>
+                    <label className="-my-2 flex min-h-tap min-w-tap items-center justify-center">
+                      <input type="checkbox" checked={i.done} onChange={() => toggle(i.id)} aria-label={`Done: ${i.title}`} className="h-5 w-5 accent-red-600" />
+                    </label>
+                    <span className="w-14 shrink-0 pt-0.5 text-sm text-navy-600">Day {i.day}</span>
+                    <K.icon className="mt-0.5 h-4 w-4 shrink-0 text-navy-600" aria-hidden />
+                    <div className={i.done ? "flex-1 text-navy-600 line-through" : "flex-1"}>
+                      <span className="mr-2 text-sm font-medium text-navy-600">{K.label}</span>
                       {i.kind === "topic" ? (
                         <Link href={`/ask?q=${encodeURIComponent(i.detail.question ?? i.title)}`} className="font-medium hover:underline">
                           {i.title}
@@ -95,12 +97,12 @@ export default function RampupPage() {
                       ) : (
                         <span className="font-medium">{i.title}</span>
                       )}
-                      {i.kind === "person" && <span className="text-muted"> · {i.detail.title} · {i.detail.why}</span>}
-                      {i.kind === "topic" && <span className="text-muted"> · opens Ask with &ldquo;{i.detail.question}&rdquo;</span>}
+                      {i.kind === "person" && <span className="text-navy-600"> · {i.detail.title} · {i.detail.why}</span>}
+                      {i.kind === "topic" && <span className="text-navy-600"> · opens Ask with &ldquo;{i.detail.question}&rdquo;</span>}
                       {i.kind === "gap" && (
-                        <span className="text-muted">
+                        <span className="text-navy-600">
                           {" "}
-                          · {i.detail.why} <Badge status="critical">Undocumented</Badge>
+                          · {i.detail.why} <Pill tone="bad">Undocumented</Pill>
                         </span>
                       )}
                     </div>
