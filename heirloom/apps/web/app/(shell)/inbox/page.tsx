@@ -1,14 +1,16 @@
 "use client";
 
+import { ChevronDown, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Fragment, Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { PrCard, type PR } from "@/components/pr-card";
 import { ReviewExtras, type Conflict, type FlagItem } from "@/components/review-extras";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Pill } from "@/components/ui/pill";
+import { Segmented } from "@/components/ui/segmented";
 import { VoiceInput, type VoiceNote } from "@/components/voice-input";
-import { api, post, TEAM_NAMES, timeAgo, type EntryView, type TeamId } from "@/lib/api";
+import { api, post, TEAM_NAMES, timeAgo, type EntryView, type Person, type TeamId } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
 import { cn } from "@/lib/utils";
 
@@ -32,8 +34,51 @@ type Inbox = {
   reconfirm: EntryView[];
   is_reviewer: boolean;
 };
+type Impact = { people_helped: number; teams_reached: number };
 
-function Composer({ q, onDone }: { q: Question; onDone: (pr: PR) => void }) {
+const ENTRY_TYPE: Record<string, string> = { regulation: "Regulation", process: "Process", roster: "Roster", decision: "Decision" };
+
+function SavedPreview({ draft }: { draft: PR | null }) {
+  const d = draft?.diff;
+  return (
+    <details className="rounded-[16px] border border-line" open={!!d}>
+      <summary className="flex min-h-tap cursor-pointer list-none items-center justify-between px-4 font-semibold">
+        How this will be saved
+        <ChevronDown className="h-4 w-4" aria-hidden />
+      </summary>
+      <div className="space-y-3 border-t border-line px-4 py-4">
+        {d ? (
+          <>
+            <p>{d.summary}</p>
+            {d.steps.length > 0 && (
+              <ol className="list-decimal space-y-1 pl-5">
+                {d.steps.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+            )}
+            {d.caveats.map((c, i) => (
+              <p key={i} className="rounded-btn bg-pill-warn px-3 py-2 text-pill-warn-fg">
+                Caveat: {c}
+              </p>
+            ))}
+            <div className="flex flex-wrap gap-2">
+              <Pill tone="info">{ENTRY_TYPE[d.entry_type] ?? d.entry_type}</Pill>
+              <Pill tone="mute">{d.expiry_months ? `Expires in ${d.expiry_months} months` : "No expiry"}</Pill>
+            </div>
+          </>
+        ) : (
+          <p className="text-navy-600">
+            Heirloom turns your answer into a summary, numbered steps, and caveats, in your own words. It&rsquo;s saved as a process entry that
+            expires in 6 months unless someone re-confirms it.
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function Detail({ q, reviewer, onDone }: { q: Question; reviewer: string | null; onDone: (pr: PR) => void }) {
   const [mode, setMode] = useState<"text" | "voice">("text");
   const [text, setText] = useState("");
   const [voice, setVoice] = useState<VoiceNote | null>(null);
@@ -57,26 +102,57 @@ function Composer({ q, onDone }: { q: Question; onDone: (pr: PR) => void }) {
     }
   };
   const ready = mode === "text" ? text.trim().length > 0 : !!voice;
+
   return (
-    <div className="space-y-3 border-t bg-surface-muted px-4 py-3">
-      <div className="flex gap-2">
-        <Button size="sm" variant={mode === "text" ? "primary" : "secondary"} onClick={() => setMode("text")}>
-          Type answer
-        </Button>
-        <Button size="sm" variant={mode === "voice" ? "primary" : "secondary"} onClick={() => setMode("voice")}>
-          Record voice note
-        </Button>
+    <Card className="space-y-5">
+      <div className="space-y-2">
+        <p className="text-sm text-navy-600">
+          {q.asker ? `${q.asker} asked` : "Asked"}
+          {q.via_team && ` through ${TEAM_NAMES[q.via_team].split(" &")[0]} Keeper`} · {timeAgo(q.created_at)}
+        </p>
+        <h2 className="font-serif text-[32px] font-medium leading-tight">{q.question}</h2>
+        <div className="flex flex-wrap gap-2">
+          {q.merged_count > 0 && <Pill tone="info">{q.merged_count + 1} people asked</Pill>}
+          {q.status === "escalated" && <Pill tone="warn">Escalated{q.escalated_to ? ` to ${q.escalated_to}` : ""}</Pill>}
+        </div>
       </div>
+
       {mode === "text" ? (
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} aria-label="Your answer" placeholder="Your answer…" className="w-full rounded-[6px] border bg-surface px-3 py-2 text-sm" />
+        <div className="space-y-2">
+          <label htmlFor="answer" className="font-semibold">
+            Your answer
+          </label>
+          <textarea
+            id="answer"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Explain it the way you would to a new teammate."
+            className="min-h-[170px] w-full rounded-btn border border-line px-4 py-3"
+          />
+          <Button variant="secondary" onClick={() => setMode("voice")}>
+            Record a voice note instead
+          </Button>
+        </div>
       ) : (
-        <VoiceInput onChange={setVoice} />
+        <div className="space-y-2">
+          <p className="font-semibold">Your voice note</p>
+          <VoiceInput onChange={setVoice} />
+          <Button variant="quiet" onClick={() => setMode("text")}>
+            Type your answer instead
+          </Button>
+        </div>
       )}
-      {error && <p className="text-sm text-status-critical">{error}</p>}
-      <Button size="sm" disabled={!ready || busy} onClick={submit}>
-        {busy ? "Structuring…" : "Submit answer"}
-      </Button>
-    </div>
+
+      <SavedPreview draft={null} />
+
+      {error && <p className="text-pill-bad-fg">{error}</p>}
+      <div className="flex flex-wrap items-center gap-4">
+        <Button disabled={!ready || busy} onClick={submit}>
+          {busy ? "Structuring…" : "Submit for review"}
+        </Button>
+        <p className="text-navy-600">{reviewer ?? "The knowledge owner"} reviews your answer before it goes live.</p>
+      </div>
+    </Card>
   );
 }
 
@@ -85,9 +161,11 @@ function InboxInner() {
   const params = useSearchParams();
   const [tab, setTab] = useState<"questions" | "prs">(params.get("tab") === "prs" ? "prs" : "questions");
   const [data, setData] = useState<Inbox | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<PR[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [impact, setImpact] = useState<Impact | null>(null);
+  const [owners, setOwners] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
     api<Inbox>("/inbox").then(setData).catch(() => setData(null));
@@ -96,122 +174,123 @@ function InboxInner() {
   useEffect(() => {
     load();
     setDrafts([]);
-  }, [load, version]);
+    setSelectedId(null);
+    if (user) api<Impact>(`/people/${user.id}/impact`).then(setImpact).catch(() => setImpact(null));
+  }, [load, version, user]);
 
-  const reviewCount =
-    (data?.prs.length ?? 0) + (data?.conflicts.length ?? 0) + (data?.flags.length ?? 0) + (data?.reconfirm.length ?? 0);
+  const questions = useMemo(() => data?.questions ?? [], [data]);
+  const selected = questions.find((q) => q.id === selectedId) ?? questions[0] ?? null;
+
+  useEffect(() => {
+    const team = selected?.team;
+    if (team && !owners[team])
+      api<{ roster: Person[] }>(`/teams/${team}`).then((t) => {
+        const owner = t.roster.find((p) => p.is_knowledge_owner) ?? t.roster.find((p) => p.role === "lead");
+        if (owner) setOwners((o) => ({ ...o, [team]: owner.name }));
+      });
+  }, [selected?.team, owners]);
+
+  const reviewCount = (data?.prs.length ?? 0) + (data?.conflicts.length ?? 0) + (data?.flags.length ?? 0) + (data?.reconfirm.length ?? 0);
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inbox</h1>
-      <div className="flex gap-1 border-b" role="tablist">
-        {[
-          ["questions", `Questions for you`, data?.questions.length ?? 0],
-          ["prs", "Knowledge PRs to review", reviewCount],
-        ].map(([k, label, n]) => (
-          <button
-            key={k as string}
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k as "questions" | "prs")}
-            className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-adp-red font-semibold" : "border-transparent text-muted")}
-          >
-            {label} {Number(n) > 0 && <Badge status="count">{n}</Badge>}
-          </button>
-        ))}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="page-title">{tab === "prs" ? "Inbox: knowledge PR review" : "Inbox"}</h1>
+          <p className="mt-1 text-navy-600">
+            {tab === "prs" ? "Approve what's right, fix what isn't. Nothing goes live without you." : "Answer once. Heirloom remembers it for everyone who asks next."}
+          </p>
+        </div>
+        {impact && impact.people_helped > 0 && (
+          <Pill tone="ok" className="px-4 py-2 text-sm">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Your answers have helped {impact.people_helped} {impact.people_helped === 1 ? "person" : "people"} across {impact.teams_reached}{" "}
+            {impact.teams_reached === 1 ? "team" : "teams"}
+          </Pill>
+        )}
       </div>
+
+      <Segmented
+        label="Inbox view"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "questions", label: `Questions for you${questions.length ? ` (${questions.length})` : ""}` },
+          { value: "prs", label: `To review${reviewCount ? ` (${reviewCount})` : ""}` },
+        ]}
+      />
+
       {toast && (
-        <p className="rounded-[6px] bg-status-good/[.1] px-3 py-2 text-sm text-status-good" role="status">
+        <p className="rounded-btn bg-pill-ok px-4 py-3 text-pill-ok-fg" role="status">
           {toast}
         </p>
       )}
 
       {tab === "questions" && (
-        <>
-          {drafts.map((pr) => (
-            <div key={pr.id} className="space-y-2">
-              <p className="text-sm text-muted">
-                Here&rsquo;s the structured draft. Tweak it if needed; {pr.reviewer ?? "the knowledge owner"} reviews it next.
-              </p>
-              <PrCard pr={pr} canReview={false} onDone={(m) => setToast(m)} />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
+          <Card className="h-fit overflow-hidden p-0">
+            <div className="flex items-center gap-2 px-6 pb-3 pt-6">
+              <CardTitle>Questions for you</CardTitle>
+              {questions.length > 0 && <Pill tone="count">{questions.length}</Pill>}
             </div>
-          ))}
-          <Card className="overflow-hidden p-0">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-surface text-left text-xs text-muted">
-                <tr className="border-b">
-                  <th className="px-4 py-2 font-medium">Question</th>
-                  <th className="px-4 py-2 font-medium">From</th>
-                  <th className="px-4 py-2 font-medium">Asked</th>
-                  <th className="px-4 py-2 font-medium">Similar</th>
-                  <th className="px-4 py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {data?.questions.map((q) => (
-                  <Fragment key={q.id}>
-                    <tr className="border-b hover:bg-adp-navy-50">
-                      <td className="px-4 py-3">
-                        {q.question}
-                        {q.status === "escalated" && <Badge status="warn" className="ml-2">Escalated{q.escalated_to ? ` to ${q.escalated_to}` : ""}</Badge>}
-                      </td>
-                      <td className="px-4 py-3 text-muted">
-                        {q.via_team ? `${TEAM_NAMES[q.via_team].split(" &")[0]} Keeper` : "Direct"}
-                        {q.asker && ` (for ${q.asker.split(" ")[0]})`}
-                      </td>
-                      <td className="px-4 py-3 text-muted">{timeAgo(q.created_at)}</td>
-                      <td className="px-4 py-3 text-muted">{q.merged_count ? `${q.merged_count} merged` : "—"}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Button size="sm" variant={open === q.id ? "secondary" : "primary"} onClick={() => setOpen(open === q.id ? null : q.id)}>
-                          {open === q.id ? "Close" : "Answer"}
-                        </Button>
-                      </td>
-                    </tr>
-                    {open === q.id && (
-                      <tr>
-                        <td colSpan={5} className="p-0">
-                          <Composer
-                            q={q}
-                            onDone={(pr) => {
-                              setOpen(null);
-                              setDrafts((d) => [pr, ...d]);
-                              setToast(`Answer structured into Knowledge PR #${pr.id}.`);
-                              load();
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-                {data && data.questions.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted">
-                      No questions waiting for {user?.name.split(" ")[0] ?? "you"}.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <ul className="border-t border-line">
+              {questions.map((q) => (
+                <li key={q.id} className="border-b border-line last:border-0">
+                  <button
+                    type="button"
+                    aria-current={selected?.id === q.id ? "true" : undefined}
+                    onClick={() => setSelectedId(q.id)}
+                    className={cn("w-full space-y-1.5 px-6 py-4 text-left", selected?.id === q.id ? "bg-pill-mute" : "hover:bg-page")}
+                  >
+                    <span className="line-clamp-2 block font-medium">{q.question}</span>
+                    <span className="block text-sm text-navy-600">
+                      {q.asker ?? "Someone"} · {timeAgo(q.created_at)}
+                    </span>
+                    {q.merged_count > 0 && <Pill tone="info">{q.merged_count + 1} people asked</Pill>}
+                  </button>
+                </li>
+              ))}
+              {data && questions.length === 0 && <li className="px-6 py-6 text-navy-600">No questions waiting for you.</li>}
+            </ul>
           </Card>
-        </>
+
+          <div className="space-y-6">
+            {drafts.map((pr) => (
+              <div key={pr.id} className="space-y-3">
+                <p className="text-navy-600">Sent for review. Here&rsquo;s how it will be saved; you can still edit it.</p>
+                <PrCard pr={pr} canReview={false} onDone={(m) => setToast(m)} />
+              </div>
+            ))}
+            {selected && (
+              <Detail
+                key={selected.id}
+                q={selected}
+                reviewer={owners[selected.team] ?? null}
+                onDone={(pr) => {
+                  setDrafts((d) => [pr, ...d]);
+                  setToast(`Thanks. Your answer is now Knowledge PR #${pr.id}.`);
+                  load();
+                }}
+              />
+            )}
+          </div>
+        </div>
       )}
 
       {tab === "prs" && data && (
-        <div className="space-y-4">
-          {!data.is_reviewer && data.prs.length === 0 && (
-            <Card className="text-sm text-muted">Knowledge PRs go to each team&rsquo;s knowledge owner. Nothing here for you.</Card>
-          )}
+        <div className="space-y-6">
           {data.prs.map((pr) => (
             <PrCard key={pr.id} pr={pr} canReview={data.is_reviewer} onDone={(m) => (setToast(m), load())} />
           ))}
-          {data.is_reviewer && reviewCount === 0 && <Card className="text-sm text-muted">Nothing to review.</Card>}
+          {reviewCount === 0 && (
+            <Card className="text-navy-600">{data.is_reviewer ? "Nothing to review." : "Knowledge PRs go to each team's knowledge owner. Nothing here for you."}</Card>
+          )}
           <ReviewExtras conflicts={data.conflicts} flags={data.flags} reconfirm={data.reconfirm} onDone={(m) => (setToast(m), load())} />
         </div>
       )}
     </div>
   );
 }
-
 
 export default function InboxPage() {
   return (
