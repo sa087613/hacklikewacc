@@ -1,13 +1,15 @@
 "use client";
 
-import { AlertTriangle, CalendarPlus, LogOut, ShieldAlert, X } from "lucide-react";
+import { AlertTriangle, CalendarPlus, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BusFactorMap, type Topic } from "@/components/bus-factor-map";
-import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api, isLead, post, shortDate, TEAM_NAMES, TEAMS, type EntryView, type TeamId } from "@/lib/api";
+import { Pill } from "@/components/ui/pill";
+import { Segmented } from "@/components/ui/segmented";
+import { api, isLead, post, shortDate, TEAM_NAMES, type EntryView } from "@/lib/api";
 import { useDemoUser } from "@/lib/demo-user";
 
 type MapData = { topics: Topic[]; stats: { red: number; amber: number; green: number; expiring: number } };
@@ -16,165 +18,121 @@ type Detail = Topic & {
   sources: { id: string; title: string; type: string; share_level: string }[];
   open_questions: { id: string; question: string; status: string }[];
 };
+type Filter = "all" | "red" | "amber" | "green" | "expiring";
 
-function TopicPanel({ topicId, onClose, onChanged }: { topicId: string; onClose: () => void; onChanged: () => void }) {
-  const { user, people } = useDemoUser();
+/** Start exit interview (consent required) + schedule capture: the two actions on an at-risk topic. */
+function RiskActions({ topic, personId, personName, dark }: { topic: Topic; personId: string; personName: string; dark?: boolean }) {
   const router = useRouter();
-  const [d, setD] = useState<Detail | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
-  const [starting, setStarting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const first = personName.split(" ")[0];
 
-  useEffect(() => {
-    setD(null);
-    setMsg(null);
-    setConsent(false);
-    api<Detail>(`/knowledge/topics/${topicId}`).then(setD);
-  }, [topicId]);
-
-  if (!d) return null;
-  const sole = d.bus_factor === 1 ? d.knowers[0] : null;
-  const soleTeam = sole && people.find((p) => p.id === sole.person_id)?.team_id;
-  const canStartExit = !!sole?.departing && user?.team_id === soleTeam && isLead(user);
-
-  const startExit = async () => {
-    setStarting(true);
+  const start = async () => {
     setError(null);
     try {
-      const iv = await post<{ id: string }>("/exit-interviews", { person_id: sole!.person_id, consent });
+      const iv = await post<{ id: string }>("/exit-interviews", { person_id: personId, consent });
       router.push(`/exit-interview/${iv.id}`);
     } catch (e) {
       setError((e as Error).message);
-      setStarting(false);
     }
   };
-
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[480px] flex-col border-l bg-surface shadow-xl">
-      <div className="flex items-start justify-between border-b px-5 py-4">
-        <div>
-          <p className="text-xs text-muted">
-            {TEAM_NAMES[d.team_id]}
-            {d.co_owner_team_ids.length > 0 && ` · co-owned with ${d.co_owner_team_ids.map((t) => TEAM_NAMES[t]).join(", ")}`}
-          </p>
-          <h2 className="text-lg font-semibold">{d.name}</h2>
-        </div>
-        <button onClick={onClose} aria-label="Close" className="rounded-[6px] p-1 hover:bg-adp-navy-50">
-          <X className="h-5 w-5" />
-        </button>
+    <div className="space-y-3">
+      <label className="flex min-h-tap items-center gap-3">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="h-5 w-5 accent-red-600" />
+        <span>{personName} has agreed to an exit interview.</span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={!consent} onClick={start}>
+          <LogOut className="h-4 w-4" aria-hidden /> Start exit interview
+        </Button>
+        <Button
+          variant={dark ? "on-dark" : "secondary"}
+          disabled={!!msg}
+          onClick={() =>
+            post<{ scheduled_with: string }>(`/knowledge/topics/${topic.id}/capture`)
+              .then((r) => setMsg(`Capture session requested with ${r.scheduled_with}.`))
+              .catch((e) => setError(e.message))
+          }
+        >
+          <CalendarPlus className="h-4 w-4" aria-hidden /> Schedule 10-minute capture session
+        </Button>
       </div>
-      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4 text-sm">
-        <div className="flex flex-wrap gap-2">
-          <Badge status={d.status === "red" ? "critical" : d.status === "amber" ? "warn" : "good"}>
-            {d.bus_factor} {d.bus_factor === 1 ? "person knows" : "people know"} this
-          </Badge>
-          <Badge status={d.documented ? "info" : "neutral"}>{d.documented ? "Documented" : "Undocumented"}</Badge>
-          {d.last_verified && <Badge status="neutral">Last verified {shortDate(d.last_verified)}</Badge>}
-        </div>
+      {msg && <p>{msg}</p>}
+      {error && <p className={dark ? "text-pill-bad" : "text-pill-bad-fg"}>{error}</p>}
+      <span className="sr-only">Actions for {first}</span>
+    </div>
+  );
+}
 
-        {sole && d.status === "red" && (
-          <div className="space-y-2 rounded-[6px] border border-status-critical/40 bg-status-critical/[.05] p-3">
-            <p className="flex items-center gap-2 font-medium text-status-critical">
-              <ShieldAlert className="h-4 w-4" /> Organizational risk: only {sole.name} knows this
-              {sole.departing && " and they are leaving"}.
-            </p>
-            {msg ? (
-              <p className="text-status-good">{msg}</p>
-            ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => post<{ scheduled_with: string }>(`/knowledge/topics/${d.id}/capture`).then((r) => setMsg(`Capture session requested with ${r.scheduled_with}.`))}
-              >
-                <CalendarPlus className="h-4 w-4" /> Schedule a 10-minute capture session with {sole.name.split(" ")[0]}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {canStartExit && (
-          <div className="space-y-2 rounded-[6px] border p-3">
-            <p className="flex items-center gap-2 font-medium">
-              <LogOut className="h-4 w-4" /> {sole!.name} has given notice
-            </p>
-            <p className="text-muted">
-              An exit interview asks targeted questions about every topic where {sole!.name.split(" ")[0]} is the only source. It&rsquo;s voluntary, and they
-              review everything before it&rsquo;s saved.
-            </p>
-            <label className="flex items-start gap-2">
-              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
-              <span>{sole!.name} has agreed to an exit interview.</span>
-            </label>
-            {error && <p className="text-status-critical">{error}</p>}
-            <Button size="sm" disabled={!consent || starting} onClick={startExit}>
-              Start exit interview
-            </Button>
-          </div>
-        )}
-
-        <section>
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">People who know it</h3>
-          <ul className="space-y-1">
-            {d.knowers.map((k) => (
-              <li key={k.person_id}>
-                {k.name} <span className="text-muted">· {k.title} · {k.roles.join(", ")}</span>
-                {k.departing && <Badge status="warn" className="ml-2">Departing</Badge>}
-              </li>
-            ))}
-            {d.knowers.length === 0 && <li className="text-muted">Nobody yet.</li>}
-          </ul>
-        </section>
-        <section>
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Knowledge entries</h3>
-          <ul className="space-y-2">
-            {d.entries.map((e) => (
-              <li key={e.id} className="rounded-[6px] border p-2.5">
-                <p className="font-medium">{e.question}</p>
-                <p className="text-muted">{e.summary}</p>
-                <p className="mt-1 text-xs text-muted">
-                  {e.status} · verified by {e.verified_by} {shortDate(e.verified_at)}
-                  {e.expires_at && ` · expires ${shortDate(e.expires_at)}`}
-                </p>
-              </li>
-            ))}
-            {d.entries.length === 0 && <li className="text-muted">No approved entries.</li>}
-          </ul>
-        </section>
-        <section>
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Sources</h3>
-          <ul className="space-y-1">
-            {d.sources.map((s) => (
-              <li key={s.id}>
-                {s.title} <span className="text-xs text-muted">· {s.type.replace("_", " ")}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        {d.open_questions.length > 0 && (
-          <section>
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Open questions</h3>
-            <ul className="space-y-1">
-              {d.open_questions.map((q) => (
-                <li key={q.id}>
-                  {q.question} <span className="text-xs text-muted">· {q.status}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+function DetailPanel({ topicId }: { topicId: string }) {
+  const [d, setD] = useState<Detail | null>(null);
+  useEffect(() => {
+    setD(null);
+    api<Detail>(`/knowledge/topics/${topicId}`).then(setD);
+  }, [topicId]);
+  if (!d) return <div className="rounded-card bg-navy-950 p-7 text-white/80">Loading…</div>;
+  const sole = d.bus_factor === 1 ? d.knowers[0] : null;
+  return (
+    <aside className="space-y-6 rounded-card bg-navy-950 p-7 text-white" aria-label={`${d.name} details`}>
+      <div>
+        <p className="text-sm text-white/70">
+          {TEAM_NAMES[d.team_id]}
+          {d.co_owner_team_ids.length > 0 && ` · shared with ${d.co_owner_team_ids.map((t) => TEAM_NAMES[t]).join(", ")}`}
+        </p>
+        <h2 className="font-serif text-[28px] font-medium leading-tight">{d.name}</h2>
       </div>
+      <div className="flex items-end gap-3">
+        <span className="font-serif text-[80px] font-medium leading-none">{d.bus_factor}</span>
+        <span className="pb-3 text-white/80">{d.bus_factor === 1 ? "person knows this" : "people know this"}</span>
+      </div>
+      <ul className="space-y-3">
+        {d.knowers.map((k) => (
+          <li key={k.person_id} className="flex items-center gap-3">
+            <Avatar name={k.name} size="md" />
+            <span className="flex-1">
+              <span className="block font-semibold">{k.name}</span>
+              <span className="block text-sm text-white/70">{k.title}</span>
+            </span>
+            {k.departing && <Pill tone="bad">Leaving</Pill>}
+          </li>
+        ))}
+        {d.knowers.length === 0 && <li className="text-white/70">Nobody yet.</li>}
+      </ul>
+      <p className="text-white/80">
+        {d.last_verified ? `Last verified ${shortDate(d.last_verified)}` : "Never verified"} · {d.documented ? "documented" : "not written down"}
+      </p>
+      {sole && d.status !== "green" && <RiskActions topic={d} personId={sole.person_id} personName={sole.name} dark />}
+      {d.entries.length > 0 && (
+        <div className="space-y-2 border-t border-white/15 pt-4">
+          <p className="font-semibold">Entries</p>
+          {d.entries.map((e) => (
+            <p key={e.id} className="text-sm text-white/80">
+              {e.question} · {e.status}
+            </p>
+          ))}
+        </div>
+      )}
+      {d.sources.length > 0 && (
+        <div className="space-y-2 border-t border-white/15 pt-4">
+          <p className="font-semibold">Sources</p>
+          {d.sources.map((s) => (
+            <p key={s.id} className="text-sm text-white/80">
+              {s.title}
+            </p>
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
 
 export default function KnowledgePage() {
-  const { user, version } = useDemoUser();
+  const { user, people, version } = useDemoUser();
   const [data, setData] = useState<MapData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [team, setTeam] = useState<TeamId | "all">("all");
-  const [status, setStatus] = useState<"all" | "red" | "amber" | "green">("all");
-  const [expiring, setExpiring] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -191,74 +149,90 @@ export default function KnowledgePage() {
   }, [load, version, user]);
 
   const topics = useMemo(
-    () =>
-      (data?.topics ?? []).filter(
-        (t) => (team === "all" || t.team_id === team) && (status === "all" || t.status === status) && (!expiring || t.expiring_soon),
-      ),
-    [data, team, status, expiring],
+    () => (data?.topics ?? []).filter((t) => (filter === "all" ? true : filter === "expiring" ? t.expiring_soon : t.status === filter)),
+    [data, filter],
   );
+
+  // Spotlight: someone who has given notice and is the only one who knows a red topic.
+  const spotlight = useMemo(() => {
+    for (const t of data?.topics ?? []) {
+      const k = t.status === "red" && t.bus_factor === 1 ? t.knowers[0] : null;
+      if (k?.departing) return { topic: t, person: k };
+    }
+    return null;
+  }, [data]);
+
+  useEffect(() => {
+    if (!selected && data?.topics.length) setSelected((spotlight?.topic ?? data.topics.find((t) => t.status === "red") ?? data.topics[0]).id);
+  }, [data, spotlight, selected]);
 
   if (user && !isLead(user)) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Knowledge</h1>
-        <Card className="text-sm text-muted">
-          The bus factor map is visible to team leads only. It shows organizational risk, never a judgment of a person.
-        </Card>
+        <h1 className="page-title">Knowledge</h1>
+        <Card className="text-navy-600">The bus factor map is visible to team leads only. It shows organizational risk, never a judgment of a person.</Card>
       </div>
     );
   }
 
+  const canAct = spotlight && people.find((p) => p.id === spotlight.person.person_id)?.team_id === user?.team_id;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Knowledge</h1>
-        <p className="text-sm text-muted">Bus factor: how many people know each topic. This shows organizational risk, not individual performance. Visible to team leads only.</p>
+        <h1 className="page-title">Knowledge</h1>
+        <p className="mt-1 text-navy-600">How many people know each topic. This is organizational risk, not a judgment of anyone. Team leads only.</p>
       </div>
-      {error && <Card className="text-sm text-status-critical">{error}</Card>}
+      {error && <Card className="text-pill-bad-fg">{error}</Card>}
+
+      {spotlight && (
+        <section className="space-y-4 rounded-card border border-pill-bad-fg/20 bg-pill-bad p-7" aria-labelledby="spotlight">
+          <p id="spotlight" className="font-serif text-[26px] font-medium leading-snug text-pill-bad-fg">
+            {spotlight.person.name} gave notice yesterday.
+          </p>
+          <p>
+            {spotlight.person.name.split(" ")[0]} is the only person who knows <span className="font-semibold">{spotlight.topic.name.toLowerCase()}</span>.
+          </p>
+          {canAct ? (
+            <RiskActions topic={spotlight.topic} personId={spotlight.person.person_id} personName={spotlight.person.name} />
+          ) : (
+            <p className="text-sm">Their team lead can start an exit interview.</p>
+          )}
+        </section>
+      )}
+
       {data && (
-        <Card className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-sm">
-          <span className="flex items-center gap-1.5 font-semibold text-status-critical">
-            <AlertTriangle className="h-4 w-4" /> {data.stats.red} red topic{data.stats.red === 1 ? "" : "s"}
+        <Card className="flex flex-wrap items-center gap-x-8 gap-y-4 py-5">
+          <span className="flex items-center gap-2 font-semibold text-pill-bad-fg">
+            <AlertTriangle className="h-4 w-4" aria-hidden /> {data.stats.red} red
           </span>
-          <span className="font-semibold text-status-warn">{data.stats.amber} amber</span>
-          <span className="font-semibold text-status-good">{data.stats.green} green</span>
-          <span className="text-muted">{data.stats.expiring} expiring this month</span>
-          <span className="ml-auto flex flex-wrap items-center gap-2">
-            <select value={team} onChange={(e) => setTeam(e.target.value as TeamId | "all")} aria-label="Team" className="h-8 rounded-[6px] border bg-surface px-2">
-              <option value="all">All teams</option>
-              {TEAMS.map((t) => (
-                <option key={t} value={t}>
-                  {TEAM_NAMES[t]}
-                </option>
-              ))}
-            </select>
-            <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status" className="h-8 rounded-[6px] border bg-surface px-2">
-              <option value="all">All statuses</option>
-              <option value="red">Red</option>
-              <option value="amber">Amber</option>
-              <option value="green">Green</option>
-            </select>
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={expiring} onChange={(e) => setExpiring(e.target.checked)} /> Expiring soon
-            </label>
-          </span>
+          <span className="font-semibold text-pill-warn-fg">{data.stats.amber} amber</span>
+          <span className="font-semibold text-pill-ok-fg">{data.stats.green} green</span>
+          <span className="text-navy-600">{data.stats.expiring} expiring this month</span>
+          <Segmented
+            className="ml-auto"
+            label="Filter topics"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All" },
+              { value: "red", label: "Red" },
+              { value: "amber", label: "Amber" },
+              { value: "green", label: "Green" },
+              { value: "expiring", label: "Expiring" },
+            ]}
+          />
         </Card>
       )}
-      <p className="text-xs text-muted">
-        <span className="font-semibold text-status-critical">Red</span>: 1 person, undocumented · <span className="font-semibold text-status-warn">Amber</span>: 1–2
-        people or partly documented · <span className="font-semibold text-status-good">Green</span>: 3+ people, documented. Tile size: how often it&rsquo;s asked.
-      </p>
-      {data && <BusFactorMap topics={topics} selected={selected} onSelect={(t) => setSelected(t.id)} />}
-      {selected && (
-        <TopicPanel
-          topicId={selected}
-          onClose={() => {
-            setSelected(null);
-            load();
-          }}
-          onChanged={load}
-        />
+
+      {data && (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-3">
+            <BusFactorMap topics={topics} selected={selected} onSelect={(t) => setSelected(t.id)} />
+            <p className="text-sm text-navy-600">Red: one person and not written down. Amber: one or two people, or partly written down. Green: three or more people and written down. Taller tiles get asked more.</p>
+          </div>
+          {selected && <DetailPanel key={selected} topicId={selected} />}
+        </div>
       )}
     </div>
   );
