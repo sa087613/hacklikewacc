@@ -1,0 +1,8 @@
+{
+  "name": "heirloom",
+  "private": true,
+  "scripts": {
+    "dev": "./scripts/dev.sh",
+    "dev:reset": "./scripts/dev.sh --reset"
+  }
+}
