@@ -1,33 +1,52 @@
 import type { Config } from "tailwindcss";
 
-// Theme tokens are copied exactly from SPEC §18. Don't add colors here.
+// Design tokens. Components use these names only; no hex values outside this file and globals.css.
+const navy = { 950: "#0B1238", 900: "#121C4E", 600: "#566079" };
+const red = { 600: "#D0271D", 700: "#A81E16" };
+const pill = {
+  ok: "#DDF3E5",
+  "ok-fg": "#116632",
+  warn: "#FCE9C8",
+  "warn-fg": "#8A4308",
+  bad: "#FBE3E3",
+  "bad-fg": "#9F1818",
+  info: "#E1E9FD",
+  "info-fg": "#1740B5",
+  mute: "#E8ECF6",
+  "mute-fg": "#3C4766",
+};
+const team = { time: "#8B5CF6", payroll: "#5B6BD6", benefits: "#0F9F90" };
+
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      screens: { nav: "900px" },
       colors: {
-        adp: {
-          red: "#D0271D",
-          "red-bright": "#EE2722",
-          "red-dark": "#A81E16",
-          navy: "#121C4E",
-          "navy-700": "#2E3A6E",
-          "navy-50": "#EEF0F6",
-        },
-        surface: { DEFAULT: "#FFFFFF", muted: "#F5F6F9" },
-        border: "#DDE0E8",
-        muted: "#5B6278",
-        status: {
-          good: "#16A34A",
-          warn: "#D97706",
-          critical: "#B91C1C",
-          info: "#2563EB",
-          neutral: "#6B7280",
-        },
-        team: { payroll: "#2E3A6E", benefits: "#0D9488", time: "#7C3AED" },
+        navy,
+        red,
+        page: "#F4F6FB",
+        card: "#FFFFFF",
+        line: "#D9DEEB",
+        pill,
+        team,
+        tile: { red: "#B91C1C", amber: "#FAD9A1", green: pill.ok },
+
+        // Legacy aliases onto the new palette, removed once every page is migrated.
+        adp: { red: red[600], "red-bright": red[600], "red-dark": red[700], navy: navy[900], "navy-700": navy[600], "navy-50": pill.mute },
+        surface: { DEFAULT: "#FFFFFF", muted: "#F4F6FB" },
+        border: "#D9DEEB",
+        muted: navy[600],
+        status: { good: pill["ok-fg"], warn: pill["warn-fg"], critical: pill["bad-fg"], info: pill["info-fg"], neutral: pill["mute-fg"] },
       },
-      fontFamily: { sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"] },
-      borderRadius: { card: "8px" },
+      fontFamily: {
+        sans: ["var(--font-hanken)", "system-ui", "sans-serif"],
+        serif: ["var(--font-newsreader)", "Georgia", "serif"],
+      },
+      fontSize: { body: ["15px", "1.55"] },
+      borderRadius: { card: "20px", btn: "12px" },
+      minHeight: { tap: "44px" },
+      minWidth: { tap: "44px" },
     },
   },
   plugins: [],

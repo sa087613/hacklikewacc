@@ -29,24 +29,27 @@ export function Notifications() {
 
   return (
     <DropdownMenu onOpenChange={open}>
-      <DropdownMenuTrigger aria-label="Notifications" className="relative rounded-[6px] p-2 hover:bg-white/10">
-        <Bell className="h-5 w-5" aria-hidden />
+      <DropdownMenuTrigger
+        aria-label={badges.notifications ? `Notifications, ${badges.notifications} unread` : "Notifications"}
+        className="relative flex min-h-tap min-w-tap items-center justify-center rounded-btn border border-line bg-card text-navy-900 hover:bg-pill-mute"
+      >
+        <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
         {badges.notifications > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-adp-red px-1 text-[10px] font-semibold">
+          <span aria-hidden className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-semibold text-white">
             {badges.notifications}
           </span>
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-        {items.length === 0 && <p className="px-2 py-3 text-sm text-muted">Nothing new.</p>}
+        {items.length === 0 && <p className="px-2 py-3 text-sm text-navy-600">Nothing new.</p>}
         <div className="max-h-96 overflow-y-auto">
           {items.map((n) => (
             <DropdownMenuItem key={n.id} asChild>
               <Link href={n.link ?? "#"} className="flex flex-col items-start gap-0.5">
-                <span className={n.read ? "text-adp-navy-700" : "font-semibold"}>{n.title}</span>
-                {n.body && <span className="line-clamp-2 text-xs text-muted">{n.body}</span>}
-                <span className="text-[11px] text-muted">{timeAgo(n.created_at)}</span>
+                <span className={n.read ? "text-navy-600" : "font-semibold"}>{n.title}</span>
+                {n.body && <span className="line-clamp-2 text-xs text-navy-600">{n.body}</span>}
+                <span className="text-xs text-navy-600">{timeAgo(n.created_at)}</span>
               </Link>
             </DropdownMenuItem>
           ))}

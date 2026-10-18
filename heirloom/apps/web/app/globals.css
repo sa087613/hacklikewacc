@@ -2,24 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Team colors as CSS variables for SVG strokes (React Flow edges); same values as tailwind team.*. */
+  --team-time: #8b5cf6;
+  --team-payroll: #5b6bd6;
+  --team-benefits: #0f9f90;
+  --red-600: #d0271d;
+  --dot: rgba(255, 255, 255, 0.12);
+}
+
 @layer base {
   html,
   body {
-    @apply bg-surface-muted text-adp-navy;
+    @apply bg-page text-navy-900;
   }
   body {
-    @apply text-sm antialiased;
+    @apply font-sans text-body antialiased;
   }
   * {
-    @apply border-border;
+    @apply border-line;
   }
   :focus-visible {
-    @apply outline-none ring-2 ring-adp-red-bright ring-offset-1;
+    outline: 2px solid var(--red-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .page-title {
+    @apply font-serif text-[36px] font-medium leading-tight tracking-[-0.015em];
+  }
+  .dot-grid {
+    background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
 }
 
 @keyframes dash {
   to {
     stroke-dashoffset: -12;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

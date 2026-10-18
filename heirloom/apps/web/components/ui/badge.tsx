@@ -1,24 +1,9 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { Pill, type PillTone } from "@/components/ui/pill";
 
-// Pill with status color at 12% fill and full-color text (§8.5).
-const badgeVariants = cva("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", {
-  variants: {
-    status: {
-      good: "bg-status-good/[.12] text-status-good",
-      warn: "bg-status-warn/[.12] text-status-warn",
-      critical: "bg-status-critical/[.12] text-status-critical",
-      info: "bg-status-info/[.12] text-status-info",
-      neutral: "bg-status-neutral/[.12] text-status-neutral",
-      count: "min-w-5 justify-center bg-adp-red px-1.5 text-white",
-    },
-  },
-  defaultVariants: { status: "neutral" },
-});
+// Transitional adapter: old status names → Pill tones. Removed once every page uses Pill directly.
+const MAP: Record<string, PillTone> = { good: "ok", warn: "warn", critical: "bad", info: "info", neutral: "mute", count: "count" };
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {}
-
-export function Badge({ className, status, ...props }: BadgeProps) {
-  return <span className={cn(badgeVariants({ status }), className)} {...props} />;
+export function Badge({ status = "neutral", ...props }: React.HTMLAttributes<HTMLSpanElement> & { status?: string }) {
+  return <Pill tone={MAP[status] ?? "mute"} {...props} />;
 }

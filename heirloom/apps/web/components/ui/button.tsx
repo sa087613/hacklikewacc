@@ -4,15 +4,17 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex min-h-tap items-center justify-center gap-2 whitespace-nowrap rounded-btn font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-adp-red text-white hover:bg-adp-red-bright active:bg-adp-red-dark",
-        secondary: "border border-adp-navy bg-surface text-adp-navy hover:bg-adp-navy-50",
-        ghost: "text-adp-navy-700 hover:bg-adp-navy-50",
+        primary: "bg-red-600 text-white hover:bg-red-700",
+        secondary: "border border-line bg-card text-navy-900 hover:bg-pill-mute",
+        quiet: "text-navy-900 hover:bg-pill-mute",
+        "on-dark": "border border-white/25 bg-white/10 text-white hover:bg-white/20",
+        ghost: "text-navy-900 hover:bg-pill-mute", // alias of quiet
       },
-      size: { default: "h-9 px-4", sm: "h-8 px-3", icon: "h-9 w-9" },
+      size: { default: "px-5 text-[15px]", sm: "px-4 text-sm", icon: "min-w-tap px-0" },
     },
     defaultVariants: { variant: "primary", size: "default" },
   },

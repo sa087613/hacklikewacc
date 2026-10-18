@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,17 +18,24 @@ export function UserSwitcher() {
   const { people, user, setUserId, error, config } = useDemoUser();
   const router = useRouter();
 
-  if (error) return <span className="text-xs text-white/70">API offline</span>;
+  if (error) return <span className="text-sm text-white/80">Can&rsquo;t reach the API</span>;
 
   const teams = Object.keys(TEAM_NAMES) as TeamId[];
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-sm text-white hover:bg-white/10">
-        {user?.name ?? "Loading…"}
-        <ChevronDown className="h-4 w-4" aria-hidden />
+      <DropdownMenuTrigger
+        aria-label={user ? `Signed in as ${user.name}. Switch role` : "Switch role"}
+        className="flex min-h-tap w-full items-center gap-3 rounded-btn px-2 py-2 text-left text-white hover:bg-white/10"
+      >
+        {user ? <Avatar name={user.name} size="md" /> : <span className="h-10 w-10" />}
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[15px] font-semibold">{user?.name ?? "Loading…"}</span>
+          <span className="block truncate text-[13px] text-white/70">{user?.title}</span>
+        </span>
+        <ChevronsUpDown className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Demo: view as</DropdownMenuLabel>
+      <DropdownMenuContent align="start" side="top">
+        <DropdownMenuLabel>Switch role (demo)</DropdownMenuLabel>
         {teams.map((team, i) => (
           <div key={team}>
             {i > 0 && <DropdownMenuSeparator />}
@@ -42,7 +50,7 @@ export function UserSwitcher() {
                   <span className="w-4">{p.id === user?.id && <Check className="h-4 w-4" aria-hidden />}</span>
                   <span className="flex flex-col">
                     <span>{p.name}</span>
-                    <span className="text-xs text-muted">{p.title}</span>
+                    <span className="text-xs text-navy-600">{p.title}</span>
                   </span>
                 </DropdownMenuItem>
               ))}
@@ -60,7 +68,7 @@ export function UserSwitcher() {
               }}
             >
               <span className="w-4" />
-              <span className="text-adp-red">Reset demo data</span>
+              <span className="text-red-600">Reset demo data</span>
             </DropdownMenuItem>
           </>
         )}
