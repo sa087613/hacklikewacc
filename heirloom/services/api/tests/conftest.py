@@ -7,6 +7,7 @@ from pathlib import Path
 os.environ["HEIRLOOM_OFFLINE"] = "1"
 os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="heirloom-test-")
 os.environ["AGENT_TRANSPORT"] = "inprocess"
+# HEIRLOOM_TEST_DATABASE_URL (if set) runs the suite against a disposable Postgres instead of SQLite.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest  # noqa: E402

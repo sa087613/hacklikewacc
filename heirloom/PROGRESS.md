@@ -37,7 +37,7 @@ Build order (user's priority): 2 → 3 → 4 → 7 → 6 → 5 → 9 → 8.
 
 ## Never run against live services
 
-Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `providers/embeddings.py:OpenAIEmbeddings`, `providers/transcribe.py:WhisperTranscriber`, `providers/storage.py:SupabaseStorage`, the Postgres path of `store/db.py` and the pgvector branch of `search.py`.
+Written fully, never exercised (no keys yet): `providers/llm_claude.py`, `providers/embeddings.py:OpenAIEmbeddings`, `providers/transcribe.py:WhisperTranscriber`, `providers/storage.py:SupabaseStorage`, and the pgvector branch of `search.py` (needs embeddings). The Postgres path of `store/db.py` is now tested.
 
 ## Rough edges
 
@@ -70,6 +70,13 @@ Layout, styling, and copy only. Routes, API calls, state logic, backend, and tes
 - **Network edge chips** show the direction of the latest call ("asking Payroll"), not a live per-question label, and in-flight edges stay lit 1.8 s because offline calls take milliseconds.
 - **Bottom tab bar under 900px**: "Knowledge" and "Ramp-up" are truncated to fit 8 tabs at 390px.
 - **Ramp-up, Team settings, Exit interview** got a token pass only (no layout brief was given). Settings still uses native selects for expiry and share level.
+
+## Vercel deployment (Oct 2026)
+
+- Two Vercel projects: API (root `heirloom/`, `vercel.json` + `api/index.py`, Python function) and web (root `heirloom/apps/web`). Steps in README.
+- Data on Vercel: Neon Postgres via `DATABASE_URL`. The Postgres path is now **tested**: the full suite passes against a local Postgres 16 + pgvector (`HEIRLOOM_TEST_DATABASE_URL=... pytest`), and a simulated cold start on an empty Postgres seeds exactly once under an advisory lock (`store/bootstrap.py`).
+- Serverless changes: seeding also runs from the first request (the lifespan hook may not run), data dir is `/tmp/heirloom` when `VERCEL` is set, no connection pooling on Vercel, `WEB_ORIGIN` accepts a comma-separated list, and `postgres://` URLs are accepted.
+- Still never run live: Claude (no key in local `.env`), OpenAI embeddings and Whisper, Supabase Storage. After deploying, `/health` should show `"llm": "claude"`.
 
 ## Verification (last run)
 

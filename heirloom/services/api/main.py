@@ -2,8 +2,8 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-import sqlalchemy as sa
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -12,7 +12,7 @@ import knowledge
 import routing
 from config import settings
 from routes import ask, inbox, insights, knowledge_map, network, people, sources, system
-from store import db
+from store import bootstrap, db
 
 log = logging.getLogger("heirloom")
 
@@ -34,26 +34,23 @@ async def _housekeeping():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     events.bind_loop(asyncio.get_running_loop())
-    # Offline first run: seed automatically so the app works with one command.
-    if db.backend() == "sqlite":
-        inspector = sa.inspect(db.engine())
-        empty = not inspector.has_table("teams")
-        if not empty:
-            with db.tx() as conn:
-                empty = conn.execute(sa.text("select count(*) from teams")).scalar() == 0
-        if empty:
-            from scripts.seed import seed
-
-            log.warning("Empty database: seeding offline demo data")
-            seed(verbose=False)
+    # First run seeds automatically so the app works with one command (also on an empty Postgres).
+    await run_in_threadpool(bootstrap.ensure_seeded)
     task = asyncio.create_task(_housekeeping())
     yield
     task.cancel()
 
 
 app = FastAPI(title="Heirloom API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=[settings.web_origin],
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.web_origin.split(",") if o.strip()],
                    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+", allow_methods=["*"], allow_headers=["*"])
+
+
+@app.middleware("http")
+async def _bootstrap(request: Request, call_next):
+    # Serverless hosts may skip the lifespan hook; seed (once) on the first request instead.
+    await run_in_threadpool(bootstrap.ensure_seeded)
+    return await call_next(request)
 for r in (system, ask, network, inbox, knowledge_map, insights, people, sources):
     app.include_router(r.router)
 

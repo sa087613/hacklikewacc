@@ -4,6 +4,7 @@ Every external service has a live and an offline provider. A provider goes live
 only when its credentials are present and not template placeholders, so the app
 runs end to end with no keys and switches over as keys are added to .env.
 """
+import os
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -30,13 +31,16 @@ class Settings(BaseSettings):
 
     # Force every provider offline (tests, rehearsals without network).
     heirloom_offline: bool = False
+    # Tests only: a disposable Postgres to run against even when offline. Never point it at real data.
+    heirloom_test_database_url: str = ""
 
     anthropic_model: str = "claude-opus-5-5"
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
     transcription_model: str = "whisper-1"
     storage_bucket: str = "sources"
-    data_dir: Path = ROOT / ".data"
+    # Vercel's filesystem is read-only except /tmp.
+    data_dir: Path = Path("/tmp/heirloom") if os.environ.get("VERCEL") else ROOT / ".data"
 
     # "inprocess" calls team agents directly; "mcp" launches one MCP server per team over stdio.
     agent_transport: str = "inprocess"
@@ -50,7 +54,13 @@ class Settings(BaseSettings):
     insight_confidence_threshold: float = 0.7
     dedupe_similarity: float = 0.5
 
-    web_origin: str = "http://localhost:3100"
+    web_origin: str = "http://localhost:3100"  # comma-separated list of allowed web origins
+
+    @property
+    def effective_database_url(self) -> str:
+        if self.heirloom_offline:
+            return self.heirloom_test_database_url
+        return self.database_url if is_real(self.database_url) else ""
 
     @property
     def timeout_minutes(self) -> int:
@@ -64,7 +74,7 @@ class Settings(BaseSettings):
         off = self.heirloom_offline
         openai_live = not off and is_real(self.openai_api_key)
         return {
-            "database": "postgres" if not off and is_real(self.database_url) else "sqlite",
+            "database": "postgres" if self.effective_database_url else "sqlite",
             "embeddings": "openai" if openai_live else "keyword",
             "llm": "claude" if not off and is_real(self.anthropic_api_key) else "mock",
             "transcription": "whisper" if openai_live else "transcript",

@@ -43,6 +43,22 @@ After switching the database or embeddings provider, reseed: `cd services/api &&
 
 Agents talk in-process by default. Set `AGENT_TRANSPORT=mcp` to run every agent call through a per-team MCP server over stdio (`services/team-agent/server.py`, one per `TEAM_ID`).
 
+## Deploy to Vercel
+
+Heirloom is two Vercel projects from the same repo: the website and the API. Deploy the API first.
+
+**1. API project**
+- New Project → import the repo → **Root Directory: `heirloom`** → Framework Preset: **Other**. (`heirloom/vercel.json` and `api/index.py` serve the FastAPI backend as one Python function.)
+- **Storage** tab → add **Neon** (free Postgres). It sets `DATABASE_URL` for you. The first request creates the tables and loads the demo data.
+- Environment variables: `ANTHROPIC_API_KEY`, and `WEB_ORIGIN=https://<your-web-project>.vercel.app` (comma-separate several origins).
+- Check `https://<api-project>.vercel.app/health`: `providers.database` should say `postgres` and `providers.llm` should say `claude`.
+
+**2. Web project**
+- New Project → same repo → **Root Directory: `heirloom/apps/web`** → Framework: Next.js.
+- Environment variable: `NEXT_PUBLIC_API_URL=https://<api-project>.vercel.app`, then **redeploy**. Next.js bakes this value in at build time.
+
+Without a database the API still runs, but each serverless instance keeps its own throwaway SQLite copy, so multi-step demos can reset mid-way. On Vercel, live agent edges on the Network screen need the question and the stream to hit the same instance; the audit log is always correct.
+
 ## Demo script (§15)
 
 Use the user menu (top right) to switch people. Demo mode shortens expert timeouts to 2 minutes.
