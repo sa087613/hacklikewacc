@@ -54,3 +54,20 @@ def test_vercel_mode(tmp_path):
     assert not data_dir.exists()  # no SQLite file, no uploads
     new_files = {p for p in set(API.rglob("*")) - before if "__pycache__" not in p.parts and ".pytest_cache" not in p.parts}
     assert not new_files, f"wrote to disk: {sorted(map(str, new_files))[:5]}"
+
+
+def test_failed_first_run_seed_is_reported_not_fatal(tmp_path):
+    """A database that can't be reached must not crash the function: /health explains instead."""
+    env = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "HEIRLOOM_TEST_DATABASE_URL", "HEIRLOOM_OFFLINE")}
+    env.update(VERCEL="1", DATABASE_URL="postgresql://nobody:pw@127.0.0.1:9/none", ANTHROPIC_API_KEY="", OPENAI_API_KEY="")
+    script = (
+        "import json, main\n"
+        "from fastapi.testclient import TestClient\n"
+        "with TestClient(main.app) as c:\n"
+        "    print('RESULT ' + json.dumps(c.get('/api/health').json()))\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", script], cwd=API, env=env, capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    out = json.loads(proc.stdout.split("RESULT ", 1)[1])
+    assert out["status"] == "degraded" and out["providers"]["database"] == "postgres"
+    assert "OperationalError" in out["bootstrap_error"]

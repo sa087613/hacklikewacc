@@ -44,6 +44,8 @@ def config():
 
 @router.get("/health")
 def health():
+    from store import bootstrap
+
     try:
         with tx() as conn:
             count = lambda t: conn.execute(sa.select(sa.func.count()).select_from(t)).scalar()
@@ -51,7 +53,8 @@ def health():
                       "chunks": count(chunks), "entries": count(knowledge_entries)}
         return {"status": "ok", "db": True, "counts": counts, "providers": settings.provider_status()}
     except Exception as e:  # health should report, not crash
-        return {"status": "degraded", "db": False, "error": str(e)}
+        return {"status": "degraded", "db": False, "error": f"{type(e).__name__}: {e}",
+                "bootstrap_error": bootstrap.last_error, "providers": settings.provider_status()}
 
 
 @router.get("/demo/samples")

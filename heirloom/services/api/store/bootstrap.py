@@ -10,6 +10,7 @@ from store import db
 log = logging.getLogger("heirloom")
 _lock = threading.Lock()
 _done = False
+last_error: str = ""  # reported by /health so a failed first-run seed is visible, not a crashed function
 SEED_LOCK_ID = 4242_1717  # arbitrary, app-wide
 
 
@@ -20,6 +21,17 @@ def _empty(conn) -> bool:
 
 
 def ensure_seeded() -> None:
+    """Seed if needed. Never raises: on failure the error is logged, kept in last_error, and retried next request."""
+    global last_error
+    try:
+        _ensure_seeded()
+        last_error = ""
+    except Exception as e:  # keep the function alive so /health can report what went wrong
+        last_error = f"{type(e).__name__}: {e}"
+        log.exception("first-run seeding failed")
+
+
+def _ensure_seeded() -> None:
     global _done
     if _done:
         return
